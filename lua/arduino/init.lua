@@ -130,7 +130,7 @@ function M.attach(port)
   if port then
     perform_attach(port)
   else
-    local ports = cli.get_ports()
+    local ports = cli.get_ports(true)
     if #ports == 0 then
       util.notify('No serial ports found', vim.log.levels.WARN)
     elseif #ports == 1 then
@@ -166,7 +166,7 @@ function M.choose_programmer()
 end
 
 function M.choose_port()
-  local ports = cli.get_ports()
+  local ports = cli.get_ports(true)
   if #ports == 0 then
     util.notify('No serial ports found', vim.log.levels.WARN)
     return
@@ -225,4 +225,3 @@ function M.set_baud(baud)
 end
 
 return M
-

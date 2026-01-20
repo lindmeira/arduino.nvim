@@ -2,7 +2,7 @@ local config = require 'arduino.config'
 local util = require 'arduino.util'
 local M = {}
 
-function M.get_ports()
+function M.get_ports(use_cli)
   local ports = {}
   for _, pattern in ipairs(config.options.serial_port_globs) do
     local found = vim.fn.glob(pattern, true, true)
@@ -10,8 +10,9 @@ function M.get_ports()
       table.insert(ports, port)
     end
   end
-  -- Could also use arduino-cli board list
-  if config.options.use_cli then
+  -- Only use arduino-cli if explicitly requested (e.g. for selection UI)
+  -- to avoid synchronous latency during startup/ftplugin load.
+  if use_cli and config.options.use_cli then
     local handle = io.popen 'arduino-cli board list --format json'
     if handle then
       local result = handle:read '*a'
@@ -40,7 +41,8 @@ function M.get_ports()
 end
 
 function M.guess_serial_port()
-  local ports = M.get_ports()
+  -- Use only fast globs for guessing to avoid latency
+  local ports = M.get_ports(false)
   if #ports > 0 then
     return ports[1]
   end
@@ -84,27 +86,13 @@ function M.get_compile_command(extra_args)
 
   if config.options.use_cli then
     cmd = 'arduino-cli compile'
-    -- If no sketch.json overrides, add flags
-    -- Logic: The original checked s:SKETCHFILE == v:null.
-    -- We check if we are using the global config or sketch config.
-    -- Actually, arduino-cli picks up sketch.json automatically if in dir.
-    -- But we might need to be explicit if we want to enforce vim global settings over it?
-    -- The original script appended flags only if sketch.json was NOT found (s:SKETCHFILE is null).
-    -- BUT, it also updated s:SKETCHFILE when found.
-
-    -- Let's try to pass flags. If sketch.json exists, arduino-cli might warn or override.
-    -- Safer to pass flags if we want to enforce current vim settings.
-
     if board then
       cmd = cmd .. ' -b ' .. board
     end
-    local port = M.get_port()
-    if port then
-      cmd = cmd .. ' -p ' .. port
-    end
-    if programmer and programmer ~= '' then
-      cmd = cmd .. ' -P ' .. programmer
-    end
+
+    -- NOTE: Port is NOT needed for compilation.
+    -- Removing it here avoids unnecessary port detection latency.
+
     if build_path then
       cmd = cmd .. ' --build-path "' .. build_path .. '"'
     end
@@ -116,13 +104,6 @@ function M.get_compile_command(extra_args)
     -- Old arduino executable
     local exe = util.get_arduino_executable()
     cmd = exe .. ' --verify --board ' .. board
-    local port = M.get_port()
-    if port then
-      cmd = cmd .. ' --port ' .. port
-    end
-    if programmer and programmer ~= '' then
-      cmd = cmd .. ' --pref programmer=' .. programmer
-    end
     if build_path then
       cmd = cmd .. ' --pref build.path=' .. build_path
     end
@@ -134,13 +115,25 @@ function M.get_compile_command(extra_args)
 end
 
 function M.get_upload_command()
+  local cmd = M.get_compile_command()
+  local port = M.get_port()
+
   if config.options.use_cli then
-    return M.get_compile_command '-u'
-  else
-    local cmd = M.get_compile_command()
-    cmd = cmd:gsub('%-%-verify', '') -- Remove verify
+    cmd = cmd:gsub('^arduino%-cli compile', 'arduino-cli compile -u')
+    if port then
+      cmd = cmd .. ' -p ' .. port
+    end
     if config.options.programmer and config.options.programmer ~= '' then
-      cmd = cmd .. ' --upload --useprogrammer'
+      cmd = cmd .. ' -P ' .. config.options.programmer
+    end
+    return cmd
+  else
+    cmd = cmd:gsub('%-%-verify', '') -- Remove verify
+    if port then
+      cmd = cmd .. ' --port ' .. port
+    end
+    if config.options.programmer and config.options.programmer ~= '' then
+      cmd = cmd .. ' --upload --useprogrammer --pref programmer=' .. config.options.programmer
     else
       cmd = cmd .. ' --upload'
     end

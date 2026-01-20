@@ -9,7 +9,10 @@ function M.string()
   end
 
   local board = config.options.board or 'No Board'
-  local port = cli.get_port() or 'No Port'
+  local port = cli.get_port()
+  if not port or port == '' then
+    port = 'None'
+  end
 
   return string.format('[%s] (%s)', board, port)
 end

@@ -183,9 +183,12 @@ end
 
 function M.ensure_sketch_config(dir)
   dir = dir or vim.fn.expand '%:p:h'
+  if not dir or dir == '' or dir == '.' then
+    return
+  end
   local sketch_file, _ = M.find_sketch_config(dir)
   if not sketch_file then
-    local default_yaml = 'default_fqbn: arduino:avr:uno\ndefault_port: /dev/ttyUSB0\n'
+    local default_yaml = 'default_fqbn: arduino:avr:uno\n'
     local path = dir .. '/sketch.yaml'
     local f = io.open(path, 'w')
     if f then
@@ -213,4 +216,3 @@ function M.restart_lsp()
 end
 
 return M
-
