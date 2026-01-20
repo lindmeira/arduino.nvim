@@ -15,10 +15,14 @@ return {
     }
   end,
   keys = {
-    { '<leader>ac', '<cmd>ArduinoVerify<cr>', desc = 'Verify/Compile' },
+    { '<leader>aa', '<cmd>ArduinoAttach<cr>', desc = 'Attach to Board' },
     { '<leader>ab', '<cmd>ArduinoChooseBoard<cr>', desc = 'Select Board' },
+    { '<leader>ac', '<cmd>ArduinoVerify<cr>', desc = 'Verify/Compile' },
+    { '<leader>af', '<cmd>ArduinoUpload<cr>', desc = 'Flash Firmware' },
+    { '<leader>ai', '<cmd>ArduinoGetInfo<cr>', desc = 'Get Settings' },
     { '<leader>ap', '<cmd>ArduinoChoosePort<cr>', desc = 'Select Port' },
     { '<leader>as', '<cmd>ArduinoSerial<cr>', desc = 'Serial Monitor' },
-    { '<leader>au', '<cmd>ArduinoUpload<cr>', desc = 'Upload' },
+    { '<leader>at', '<cmd>ArduinoChooseProgrammer<cr>', desc = 'Select Programmer' },
+    { '<leader>au', '<cmd>ArduinoUploadAndSerial<cr>', desc = 'Flash and Monitor' },
   },
 }
