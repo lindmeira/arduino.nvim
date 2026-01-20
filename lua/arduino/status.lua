@@ -17,7 +17,19 @@ function M.string()
     port = 'None'
   end
 
-  return string.format('[%s] (%s)', board, port)
+  local prog = config.options.programmer
+  local prog_str = ''
+  if prog and prog ~= '' then
+    prog_str = string.format(' [%s]', prog)
+  end
+
+  local baud = config.options.serial_baud
+  local port_str = port
+  if baud then
+    port_str = string.format('%s:%s', port, baud)
+  end
+
+  return string.format('[%s]%s (%s)', board, prog_str, port_str)
 end
 
 return M
