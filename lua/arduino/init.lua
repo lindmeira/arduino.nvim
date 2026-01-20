@@ -177,8 +177,8 @@ function M.choose_port()
   end
   select_item(items, 'Select Port', function(value)
     vim.g.arduino_serial_port = value -- Set global as overrides
-    -- Update sketch.json
-    util.update_sketch_config('port', 'serial://' .. value)
+    -- Update sketch config
+    util.update_sketch_config('port', value)
     util.notify('Selected port: ' .. value)
   end)
 end

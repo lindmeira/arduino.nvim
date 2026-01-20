@@ -159,10 +159,16 @@ function M.update_sketch_config(key, value, dir)
 
     local f = io.open(path, 'w')
     if f then
-      f:write('default_fqbn: ' .. (cpu.fqbn or '') .. '\n')
-      f:write('default_port: ' .. (cpu.port or '') .. '\n')
+      if cpu.fqbn and cpu.fqbn ~= '' then
+        f:write('default_fqbn: ' .. cpu.fqbn .. '\n')
+      end
+      if cpu.port and cpu.port ~= '' then
+        f:write('default_port: ' .. cpu.port .. '\n')
+      end
       f:close()
-      M.restart_lsp()
+      if key == 'fqbn' then
+        M.restart_lsp()
+      end
     else
       M.notify('Failed to update sketch.yaml', vim.log.levels.ERROR)
     end
@@ -178,7 +184,9 @@ function M.update_sketch_config(key, value, dir)
   data.cpu = data.cpu or {}
   data.cpu[key] = value
   M.write_json(sketch_file, data)
-  M.restart_lsp()
+  if key == 'fqbn' then
+    M.restart_lsp()
+  end
 end
 
 function M.ensure_sketch_config(dir)

@@ -10,6 +10,9 @@ function M.string()
 
   local board = config.options.board or 'No Board'
   local port = cli.get_port()
+  if port then
+    port = vim.trim(port)
+  end
   if not port or port == '' then
     port = 'None'
   end
