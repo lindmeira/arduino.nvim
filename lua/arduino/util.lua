@@ -223,4 +223,30 @@ function M.restart_lsp()
   end
 end
 
+--- Valid Arduino baud rates
+local VALID_BAUD_RATES = {
+  [2400] = true, [4800] = true, [9600] = true, [14400] = true, [19200] = true,
+  [28800] = true, [38400] = true, [57600] = true, [76800] = true, [115200] = true,
+  [230400] = true, [250000] = true, [500000] = true, [1000000] = true, [2000000] = true
+}
+
+--- Detect baud rate from Arduino sketch content
+---@param lines table: Array of buffer lines to analyze
+---@return number: Detected baud rate (defaults to 57600 if none found)
+function M.detect_baud_rate(lines)
+  -- Look for Serial.begin() calls and return the first valid match
+  for _, line in ipairs(lines) do
+    local baud = line:match('Serial[0-9]*%.begin%s*%(%s*(%d+)%s*%)')
+    if baud then
+      baud = tonumber(baud)
+      if baud and VALID_BAUD_RATES[baud] then
+        return baud
+      end
+    end
+  end
+
+  -- No valid Serial.begin() found, return default
+  return 57600
+end
+
 return M
