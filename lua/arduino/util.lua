@@ -73,11 +73,13 @@ function M.read_yaml_simple(path)
         value = value:sub(2, -2)
       end
 
-      if key == 'fqbn' or key == 'default_fqbn' then
-        cpu.fqbn = value
-      elseif key == 'port' or key == 'default_port' then
-        cpu.port = value
-      end
+    if key == 'fqbn' or key == 'default_fqbn' then
+      cpu.fqbn = value
+    elseif key == 'port' or key == 'default_port' then
+      cpu.port = value
+    elseif key == 'programmer' or key == 'default_programmer' then
+      cpu.programmer = value
+    end
     end
   end
   return data
@@ -155,6 +157,8 @@ function M.update_sketch_config(key, value, dir)
       cpu.fqbn = value
     elseif key == 'port' then
       cpu.port = value
+    elseif key == 'programmer' then
+      cpu.programmer = value
     end
 
     local f = io.open(path, 'w')
@@ -164,6 +168,9 @@ function M.update_sketch_config(key, value, dir)
       end
       if cpu.port and cpu.port ~= '' then
         f:write('default_port: ' .. cpu.port .. '\n')
+      end
+      if cpu.programmer and cpu.programmer ~= '' then
+        f:write('default_programmer: ' .. cpu.programmer .. '\n')
       end
       f:close()
       if key == 'fqbn' then

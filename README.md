@@ -73,7 +73,7 @@ require('arduino').setup({
 This plugin is designed to work hand-in-hand with `arduino-cli` and `arduino-language-server` by strictly using `sketch.yaml` for project configuration.
 
 *   **Automatic Initialization:** When you open an Arduino sketch (`.ino`), the plugin automatically checks for a `sketch.yaml` file. If one does not exist, it creates a default one (using `arduino:avr:uno` and `/dev/ttyUSB0`) to ensure the Language Server can attach immediately without crashing.
-*   **Persistent Settings:** Commands like `:ArduinoChooseBoard` and `:ArduinoChoosePort` update the `sketch.yaml` file directly (using `default_fqbn` and `default_port` keys). This ensures your board selection persists across sessions.
+*   **Persistent Settings:** Commands like `:ArduinoChooseBoard`, `:ArduinoChoosePort`, and `:ArduinoChooseProgrammer` update the `sketch.yaml` file directly (using `default_fqbn`, `default_port`, and `default_programmer` keys). This ensures your board, port, and programmer selections persist across sessions.
 *   **LSP Integration:** When you change the board or port, the plugin automatically restarts the `arduino_language_server`. This ensures that diagnostics, completions, and code analysis are always correct for your selected hardware.
 
 ## Commands

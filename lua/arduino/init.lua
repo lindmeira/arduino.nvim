@@ -32,6 +32,9 @@ function M.setup(opts)
   if cpu and cpu.fqbn then
     config.options.board = cpu.fqbn
   end
+  if cpu and cpu.programmer then
+    config.options.programmer = cpu.programmer
+  end
 
   M.reload_boards()
 
@@ -214,7 +217,7 @@ function M.choose_programmer()
   select_item(p_list, 'Select Programmer', function(value)
     config.options.programmer = value
     util.notify('Selected programmer: ' .. value)
-    -- util.update_sketch_config('programmer', value) -- Not standard sketch.json key?
+    util.update_sketch_config('programmer', value)
   end)
 end
 
