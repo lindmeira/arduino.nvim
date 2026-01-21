@@ -39,6 +39,10 @@ vim.api.nvim_create_user_command('ArduinoUploadAndSerial', function()
   arduino.upload_and_serial()
 end, {})
 
+vim.api.nvim_create_user_command('ArduinoCheckLogs', function()
+  arduino.check_logs()
+end, {})
+
 vim.api.nvim_create_user_command('ArduinoGetInfo', function()
   arduino.get_info()
 end, {})

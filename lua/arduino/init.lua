@@ -278,12 +278,12 @@ end
 
 function M.verify()
   local cmd = cli.get_compile_command()
-  term.run(cmd)
+  term.run_silent(cmd, 'Verification')
 end
 
 function M.upload()
   local cmd = cli.get_upload_command()
-  term.run(cmd)
+  term.run_silent(cmd, 'Upload')
 end
 
 function M.serial()
@@ -295,9 +295,52 @@ end
 
 function M.upload_and_serial()
   local upload_cmd = cli.get_upload_command()
-  term.run_and_callback(upload_cmd, function()
+  term.run_silent(upload_cmd, 'Upload', function()
     M.serial()
   end)
+end
+
+function M.check_logs()
+  local log_data = require('arduino.log').get()
+  if #log_data == 0 then
+    util.notify 'No logs available'
+    return
+  end
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_name(buf, 'Arduino Logs')
+
+  local width = math.ceil(vim.o.columns * 0.8)
+  local height = math.ceil(vim.o.lines * 0.8)
+  -- Adjusting row calculation to be more centered (accounting for status/tab lines)
+  local row = math.floor((vim.o.lines - height) / 2) - 1
+  local col = math.ceil((vim.o.columns - width) / 2)
+
+  local win_opts = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' Arduino Logs ',
+    title_pos = 'center',
+  }
+
+  local win = vim.api.nvim_open_win(buf, true, win_opts)
+
+  -- Enable ANSI colors using terminal channel
+  local chan = vim.api.nvim_open_term(buf, {})
+  vim.api.nvim_chan_send(chan, table.concat(log_data, '\r\n'))
+
+  -- Buffer options
+  vim.bo[buf].filetype = 'arduino_log'
+  vim.bo[buf].bufhidden = 'wipe'
+
+  -- Keymap to close the window
+  vim.keymap.set('n', 'q', '<cmd>close<cr>', { buffer = buf, silent = true })
+  vim.keymap.set('n', '<esc>', '<cmd>close<cr>', { buffer = buf, silent = true })
 end
 
 function M.get_info()

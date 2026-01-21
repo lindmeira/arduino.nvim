@@ -1,9 +1,36 @@
+local log = require 'arduino.log'
+local util = require 'arduino.util'
+
 local M = {}
 
 function M.run(cmd)
   vim.cmd 'split'
   vim.cmd('terminal ' .. cmd)
   vim.cmd 'startinsert'
+end
+
+function M.run_silent(cmd, title, callback)
+  log.clear()
+  log.add('Running: ' .. cmd)
+
+  vim.fn.jobstart(cmd, {
+    on_stdout = function(_, data)
+      log.add(data)
+    end,
+    on_stderr = function(_, data)
+      log.add(data)
+    end,
+    on_exit = function(_, code)
+      if code == 0 then
+        util.notify(title .. ' successful', vim.log.levels.INFO)
+        if callback then
+          vim.schedule(callback)
+        end
+      else
+        util.notify(title .. ' failed. Check logs with :ArduinoCheckLogs', vim.log.levels.ERROR)
+      end
+    end,
+  })
 end
 
 function M.run_and_callback(cmd, callback)

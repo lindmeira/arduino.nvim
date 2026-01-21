@@ -21,6 +21,7 @@ return {
     { '<leader>ac', '<cmd>ArduinoVerify<cr>', desc = 'Verify/Compile' },
     { '<leader>af', '<cmd>ArduinoUpload<cr>', desc = 'Flash Firmware' },
     { '<leader>ai', '<cmd>ArduinoInfo<cr>', desc = 'Current Settings' },
+    { '<leader>al', '<cmd>ArduinoCheckLogs<cr>', desc = 'Check Logs' },
     { '<leader>ap', '<cmd>ArduinoChoosePort<cr>', desc = 'Select Port' },
     { '<leader>as', '<cmd>ArduinoSerial<cr>', desc = 'Serial Monitor' },
     { '<leader>at', '<cmd>ArduinoChooseProgrammer<cr>', desc = 'Select Programmer' },
