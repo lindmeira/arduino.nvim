@@ -201,14 +201,47 @@ function M.attach(port)
   end
 end
 
+local function configure_options(base_fqbn, options, idx, acc, callback)
+  if idx > #options then
+    -- Done. Construct FQBN.
+    local final_fqbn = base_fqbn
+    if #acc > 0 then
+      final_fqbn = final_fqbn .. ':' .. table.concat(acc, ',')
+    end
+    callback(final_fqbn)
+    return
+  end
+
+  local opt = options[idx]
+  local items = {}
+  for _, v in ipairs(opt.values) do
+    table.insert(items, {
+      label = v.value_label or v.value,
+      value = v.value,
+    })
+  end
+
+  select_item(items, 'Select ' .. (opt.option_label or opt.option), function(choice)
+    table.insert(acc, opt.option .. '=' .. choice)
+    configure_options(base_fqbn, options, idx + 1, acc, callback)
+  end)
+end
+
 function M.choose_board()
   local b_list = boards.get_boards()
   select_item(b_list, 'Select Board', function(value)
-    config.options.board = value
-    util.notify('Selected board: ' .. value)
-    -- Also update sketch.json if exists?
-    -- The original did s:WriteSketchKey('fqbn', g:arduino_board)
-    util.update_sketch_config('fqbn', value)
+    local details = cli.get_board_details(value)
+    if details and details.config_options and #details.config_options > 0 then
+      configure_options(value, details.config_options, 1, {}, function(final_fqbn)
+        config.options.board = final_fqbn
+        util.notify('Selected board: ' .. final_fqbn)
+        util.update_sketch_config('fqbn', final_fqbn)
+      end)
+    else
+      config.options.board = value
+      util.notify('Selected board: ' .. value)
+      util.update_sketch_config('fqbn', value)
+    end
   end)
 end
 

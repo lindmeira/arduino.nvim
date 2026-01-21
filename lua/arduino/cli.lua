@@ -153,4 +153,24 @@ function M.get_serial_command()
   return cmd
 end
 
+function M.get_board_details(fqbn)
+  if not config.options.use_cli then
+    return nil
+  end
+  -- Strip existing options from FQBN if present to get base details
+  local base_fqbn = fqbn:match '^([^:]+:[^:]+:[^:]+)' or fqbn
+
+  local cmd = 'arduino-cli board details -b ' .. base_fqbn .. ' --format json'
+  local handle = io.popen(cmd)
+  if handle then
+    local result = handle:read '*a'
+    handle:close()
+    local ok, data = pcall(vim.json.decode, result)
+    if ok then
+      return data
+    end
+  end
+  return nil
+end
+
 return M
