@@ -231,7 +231,7 @@ function M.restart_lsp()
 end
 
 --- Valid Arduino baud rates
-local VALID_BAUD_RATES = {
+M.VALID_BAUD_RATES = {
   [2400] = true,
   [4800] = true,
   [9600] = true,
@@ -269,12 +269,15 @@ function M.detect_baud_rate(lines)
   for _, line in ipairs(lines) do
     -- Strip comments before pattern matching to avoid false positives
     local clean_line = strip_comments(line)
-    local baud = clean_line:match 'Serial[0-9]*%.begin%s*%(%s*(%d+)%s*%)'
-    if baud then
-      baud = tonumber(baud)
-      if baud and VALID_BAUD_RATES[baud] then
+    local baud_str = clean_line:match 'Serial[0-9]*%.begin%s*%(%s*(%d+)%s*%)'
+    if baud_str then
+      local baud = tonumber(baud_str)
+      if baud and M.VALID_BAUD_RATES[baud] then
         return baud
       end
+      -- Found a Serial.begin but the baud rate is invalid
+      M.notify('Invalid baud rate: ' .. baud_str, vim.log.levels.ERROR)
+      return config.options.original_baud or 9600
     end
   end
 

@@ -356,6 +356,10 @@ function M.get_info()
 end
 
 function M.set_baud(baud)
+  if not util.VALID_BAUD_RATES[baud] then
+    util.notify('Invalid baud rate: ' .. (baud or 'nil'), vim.log.levels.ERROR)
+    return
+  end
   if config.options.serial_baud == baud then
     return
   end
