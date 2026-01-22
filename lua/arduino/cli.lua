@@ -147,7 +147,15 @@ function M.get_serial_command()
     util.notify('No serial port found.', vim.log.levels.ERROR)
     return nil
   end
+
   local cmd = config.options.serial_cmd
+  -- Check if the first word of the command is executable
+  local exe = cmd:match '^%S+'
+  if vim.fn.executable(exe) ~= 1 then
+    -- Fallback to arduino-cli monitor if the configured command isn't available
+    cmd = 'arduino-cli monitor -p {port} --config baudrate={baud}'
+  end
+
   cmd = cmd:gsub('{port}', port)
   cmd = cmd:gsub('{baud}', config.options.serial_baud)
   return cmd

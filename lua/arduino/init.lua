@@ -344,8 +344,6 @@ function M.serial()
           vim.api.nvim_chan_send(job_id, '\001\\y')
           -- Send Standard Kill: Ctrl-A, k, y
           vim.api.nvim_chan_send(job_id, '\001ky')
-          -- Send User Requested: Ctrl-A, q
-          vim.api.nvim_chan_send(job_id, '\001q')
         end
         pcall(vim.fn.jobstop, job_id)
       end
