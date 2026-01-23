@@ -53,7 +53,7 @@ end
 
 function M.search(callback)
   -- Check cache
-  local stat = vim.loop.fs_stat(cache_file)
+  local stat = vim.uv.fs_stat(cache_file)
   if stat and (os.time() - stat.mtime.sec) < cache_expiration then
     local f = io.open(cache_file, 'r')
     if f then

@@ -1,7 +1,7 @@
 local config = require 'arduino.config'
 local M = {}
 
-M.os = vim.loop.os_uname().sysname
+M.os = vim.uv.os_uname().sysname
 
 function M.get_arduino_executable()
   if vim.g.arduino_cmd then
