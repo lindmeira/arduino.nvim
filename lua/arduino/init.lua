@@ -580,6 +580,7 @@ function M.library_manager()
                 installed = installed_map[name] ~= nil,
                 outdated = outdated_map[name] ~= nil,
                 ordinal = ordinal_prefix .. ' ' .. name,
+                details = item, -- Store full library details for preview
               })
             end
           end
@@ -596,6 +597,7 @@ function M.library_manager()
 
     local pickers = require 'telescope.pickers'
     local finders = require 'telescope.finders'
+    local previewers = require 'telescope.previewers'
     local conf = require('telescope.config').values
     local actions = require 'telescope.actions'
     local action_state = require 'telescope.actions.state'
@@ -630,15 +632,44 @@ function M.library_manager()
             version_info = entry.version_info,
             installed = entry.installed,
             outdated = entry.outdated,
+            details = entry.details,
           }
         end,
       }
     end
 
+    local lib_previewer = previewers.new_buffer_previewer {
+      title = 'Library Details',
+      define_preview = function(self, entry, _)
+        local lib = entry.value.details
+        local latest = lib.latest or {}
+
+        local lines = {}
+        table.insert(lines, '# ' .. (lib.name or 'Unknown'))
+        table.insert(lines, '')
+        table.insert(lines, '**Author:** ' .. (latest.author or 'Unknown'))
+        table.insert(lines, '**Maintainer:** ' .. (latest.maintainer or 'Unknown'))
+        table.insert(lines, '**Website:** ' .. (latest.website or '-'))
+        table.insert(lines, '**Category:** ' .. (latest.category or '-'))
+        table.insert(lines, '**Architecture:** ' .. (latest.types and table.concat(latest.types, ', ') or '-'))
+        table.insert(lines, '')
+        table.insert(lines, '## Description')
+        table.insert(lines, latest.sentence or '')
+        if latest.paragraph and latest.paragraph ~= '' then
+          table.insert(lines, '')
+          table.insert(lines, latest.paragraph)
+        end
+
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+        vim.api.nvim_buf_set_option(self.state.bufnr, 'filetype', 'markdown')
+      end,
+    }
+
     pickers
       .new({}, {
         prompt_title = 'Arduino Libraries',
         finder = create_finder(initial_results),
+        previewer = lib_previewer,
         sorter = conf.generic_sorter {},
         attach_mappings = function(prompt_bufnr, map)
           local function perform_action(action_type, close_permanently)
