@@ -4,6 +4,7 @@ local boards = require 'arduino.boards'
 local cli = require 'arduino.cli'
 local term = require 'arduino.term'
 local lib = require 'arduino.lib'
+local core = require 'arduino.core'
 
 local M = {}
 
@@ -619,25 +620,23 @@ function M.library_manager()
       }
     end
 
-    local function create_finder(results)
-      return finders.new_table {
-        results = results,
-        entry_maker = function(entry)
-          return {
-            value = entry,
-            display = make_display,
-            ordinal = entry.ordinal,
-            name = entry.name,
-            status_icon = entry.status_icon,
-            version_info = entry.version_info,
-            installed = entry.installed,
-            outdated = entry.outdated,
-            details = entry.details,
-          }
-        end,
-      }
-    end
-
+              local function create_finder(results)
+                return finders.new_table {
+                  results = results,
+                  entry_maker = function(entry)
+                    return {
+                      value = entry,
+                      display = make_display,
+                      ordinal = entry.ordinal,
+                      status_icon = entry.status_icon,
+                      version_info = entry.version_info,
+                      installed = entry.installed,
+                      outdated = entry.outdated,
+                      details = entry.details,
+                    }
+                  end,
+                }
+              end
     local lib_previewer = previewers.new_buffer_previewer {
       title = 'Library Details',
       define_preview = function(self, entry, _)
@@ -757,8 +756,267 @@ function M.library_manager()
           return true
         end,
       })
-      :find()
-  end)
-end
-
-return M
+                :find()
+        end)
+      end
+      
+      function M.core_manager()
+        if not config.options.use_telescope then
+          util.notify('Core Manager requires Telescope support enabled.', vim.log.levels.WARN)
+          return
+        end
+      
+        local ok, _ = pcall(require, 'telescope')
+        if not ok then
+          return
+        end
+      
+        util.notify('Loading core data...', vim.log.levels.INFO)
+      
+        local function fetch_data(callback)
+          core.search(function(search_data)
+            if not search_data then
+              util.notify('Failed to load cores.', vim.log.levels.ERROR)
+              callback(nil)
+              return
+            end
+      
+            -- Normalize search_data (usually a list of objects)
+            local search_list = search_data
+            if search_data.platforms then
+              search_list = search_data.platforms
+            end
+      
+            core.list_installed(function(installed_data)
+              local installed_map = {}
+              if installed_data then
+                local list = installed_data
+                if installed_data.platforms then
+                  list = installed_data.platforms
+                end
+                for _, c in ipairs(list) do
+                  if c.id then
+                    installed_map[c.id] = c.installed_version or 'installed'
+                  end
+                end
+              end
+      
+              core.list_outdated(function(outdated_data)
+                local outdated_map = {}
+                if outdated_data and outdated_data.platforms then
+                  for _, p in ipairs(outdated_data.platforms) do
+                    if p.id then
+                      outdated_map[p.id] = p.latest or 'unknown'
+                    end
+                  end
+                end
+      
+                local results = {}
+                for _, item in ipairs(search_list) do
+                  local id = item.id
+                  local name = item.name or id
+                  local status_icon = ''
+                  local version_info = ''
+                  local ordinal_prefix = 'z'
+      
+                  if installed_map[id] then
+                    status_icon = '✓'
+                    version_info = ' [' .. installed_map[id] .. ']'
+                    ordinal_prefix = 'm'
+                  end
+      
+                  if outdated_map[id] then
+                    status_icon = '↑'
+                    version_info = ' [Update: ' .. outdated_map[id] .. ']'
+                    ordinal_prefix = 'a'
+                  end
+      
+                  if id then
+                    table.insert(results, {
+                      name = id, -- Use ID as key
+                      display_name = name,
+                      status_icon = status_icon,
+                      version_info = version_info,
+                      installed = installed_map[id] ~= nil,
+                      outdated = outdated_map[id] ~= nil,
+                      ordinal = ordinal_prefix .. ' ' .. name,
+                      details = item,
+                    })
+                  end
+                end
+                callback(results)
+              end)
+            end)
+          end)
+        end
+      
+        fetch_data(function(initial_results)
+          if not initial_results then
+            return
+          end
+      
+          local pickers = require 'telescope.pickers'
+          local finders = require 'telescope.finders'
+          local previewers = require 'telescope.previewers'
+          local conf = require('telescope.config').values
+          local actions = require 'telescope.actions'
+          local action_state = require 'telescope.actions.state'
+          local entry_display = require 'telescope.pickers.entry_display'
+      
+          local displayer = entry_display.create {
+            separator = ' ',
+            items = {
+              { width = 1 }, -- Icon
+              { remaining = true }, -- Name + Version
+            },
+          }
+      
+          local function make_display(entry)
+            local icon_hl = entry.outdated and 'ArduinoLibraryOutdated' or (entry.installed and 'ArduinoLibraryInstalled' or 'Normal')
+            return displayer {
+              { entry.status_icon, icon_hl },
+              entry.display_name .. ' (' .. entry.name .. ')' .. entry.version_info,
+            }
+          end
+      
+          local function create_finder(results)
+            return finders.new_table {
+              results = results,
+              entry_maker = function(entry)
+                return {
+                  value = entry,
+                  display = make_display,
+                  ordinal = entry.ordinal,
+                  name = entry.name,
+                  display_name = entry.display_name,
+                  status_icon = entry.status_icon,
+                  version_info = entry.version_info,
+                  installed = entry.installed,
+                  outdated = entry.outdated,
+                  details = entry.details,
+                }
+              end,
+            }
+          end
+      
+          local core_previewer = previewers.new_buffer_previewer {
+            title = 'Core Details',
+            define_preview = function(self, entry, _)
+              local c = entry.value.details
+              local lines = {}
+              table.insert(lines, '# ' .. (c.name or 'Unknown'))
+              table.insert(lines, '')
+              table.insert(lines, '**ID:** ' .. (c.id or 'Unknown'))
+              table.insert(lines, '**Maintainer:** ' .. (c.maintainer or 'Unknown'))
+              table.insert(lines, '**Website:** ' .. (c.website or '-'))
+              table.insert(lines, '**Latest Version:** ' .. (c.latest or '-'))
+              table.insert(lines, '**Email:** ' .. (c.email or '-'))
+      
+              vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+              vim.bo[self.state.bufnr].filetype = 'markdown'
+              if self.state.winid then
+                vim.wo[self.state.winid].conceallevel = 2
+                vim.wo[self.state.winid].wrap = true
+                vim.wo[self.state.winid].linebreak = true
+              end
+            end,
+          }
+      
+          pickers
+            .new({}, {
+              prompt_title = 'Arduino Cores',
+              finder = create_finder(initial_results),
+              previewer = core_previewer,
+              sorter = conf.generic_sorter {},
+              attach_mappings = function(prompt_bufnr, map)
+                local function perform_action(action_type, close_permanently)
+                  local selection = action_state.get_selected_entry()
+                  if not selection then
+                    return
+                  end
+                  local entry = selection.value
+      
+                  if close_permanently then
+                    actions.close(prompt_bufnr)
+                  end
+      
+                  local cb = nil
+                  if not close_permanently then
+                    cb = function()
+                      fetch_data(function(new_results)
+                        if new_results then
+                          local current_picker = action_state.get_current_picker(prompt_bufnr)
+                          current_picker:refresh(create_finder(new_results), { reset_prompt = false })
+                        end
+                      end)
+                    end
+                  end
+      
+                  if action_type == 'context' then
+                    if entry.outdated then
+                      core.upgrade(entry.name, cb)
+                    elseif entry.installed then
+                      core.uninstall(entry.name, cb)
+                    else
+                      core.install(entry.name, cb)
+                    end
+                  elseif action_type == 'install_update' then
+                    if entry.outdated then
+                      core.upgrade(entry.name, cb)
+                    elseif not entry.installed then
+                      core.install(entry.name, cb)
+                    else
+                      util.notify('Core ' .. entry.name .. ' is already installed/updated.', vim.log.levels.INFO)
+                      if cb then
+                        cb()
+                      end
+                    end
+                  elseif action_type == 'update' then
+                    if entry.outdated then
+                      core.upgrade(entry.name, cb)
+                    else
+                      util.notify('Core ' .. entry.name .. ' is not outdated.', vim.log.levels.WARN)
+                      if cb then
+                        cb()
+                      end
+                    end
+                  elseif action_type == 'uninstall' then
+                    if entry.installed then
+                      core.uninstall(entry.name, cb)
+                    else
+                      util.notify('Core ' .. entry.name .. ' is not installed.', vim.log.levels.WARN)
+                      if cb then
+                        cb()
+                      end
+                    end
+                  end
+                end
+      
+                actions.select_default:replace(function()
+                  perform_action('context', true)
+                end)
+      
+                map('i', '<C-i>', function()
+                  perform_action('install_update', false)
+                end)
+                map('i', '<C-u>', function()
+                  perform_action('update', false)
+                end)
+                map('i', '<C-r>', function()
+                  perform_action('update', false)
+                end)
+                map('i', '<C-x>', function()
+                  perform_action('uninstall', false)
+                end)
+                map('i', '<C-d>', function()
+                  perform_action('uninstall', false)
+                end)
+      
+                return true
+              end,
+            })
+            :find()
+        end)
+      end
+      
+      return M
