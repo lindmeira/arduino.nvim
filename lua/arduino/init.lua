@@ -626,7 +626,7 @@ function M.library_manager()
             },
             sorter = conf.generic_sorter {},
             attach_mappings = function(prompt_bufnr, map)
-              actions.select_default:replace(function()
+              local function perform_action(action_type, close_permanently)
                 actions.close(prompt_bufnr)
                 local selection = action_state.get_selected_entry()
                 if not selection then
@@ -634,36 +634,69 @@ function M.library_manager()
                 end
                 local entry = selection.value
 
-                if entry.outdated then
-                  lib.upgrade(entry.name, function()
+                -- Callback to reopen/refresh if not closing permanently
+                local cb = nil
+                if not close_permanently then
+                  cb = function()
                     M.library_manager()
-                  end)
-                elseif not entry.installed then
-                  lib.install(entry.name, function()
-                    M.library_manager()
-                  end)
-                else
-                  util.notify('Library ' .. entry.name .. ' is already installed.', vim.log.levels.INFO)
+                  end
                 end
+
+                if action_type == 'context' then
+                  if entry.outdated then
+                    lib.upgrade(entry.name, cb)
+                  elseif entry.installed then
+                    lib.uninstall(entry.name, cb)
+                  else
+                    lib.install(entry.name, cb)
+                  end
+                elseif action_type == 'install_update' then
+                  if entry.outdated then
+                    lib.upgrade(entry.name, cb)
+                  elseif not entry.installed then
+                    lib.install(entry.name, cb)
+                  else
+                    util.notify('Library ' .. entry.name .. ' is already installed/updated.', vim.log.levels.INFO)
+                    if cb then
+                      cb()
+                    end
+                  end
+                elseif action_type == 'update' then
+                  if entry.outdated then
+                    lib.upgrade(entry.name, cb)
+                  else
+                    util.notify('Library ' .. entry.name .. ' is not outdated.', vim.log.levels.WARN)
+                    if cb then
+                      cb()
+                    end
+                  end
+                elseif action_type == 'uninstall' then
+                  if entry.installed then
+                    lib.uninstall(entry.name, cb)
+                  else
+                    util.notify('Library ' .. entry.name .. ' is not installed.', vim.log.levels.WARN)
+                    if cb then
+                      cb()
+                    end
+                  end
+                end
+              end
+
+              actions.select_default:replace(function()
+                perform_action('context', true)
               end)
 
+              map('i', '<C-i>', function()
+                perform_action('install_update', false)
+              end)
+              map('i', '<C-u>', function()
+                perform_action('update', false)
+              end)
               map('i', '<C-d>', function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if not selection then
-                  return
-                end
-                local entry = selection.value
-
-                if entry.installed then
-                  lib.uninstall(entry.name, function()
-                    M.library_manager()
-                  end)
-                else
-                  util.notify('Library ' .. entry.name .. ' is not installed.', vim.log.levels.WARN)
-                  -- Reopen to keep flow
-                  M.library_manager()
-                end
+                perform_action('uninstall', false)
+              end)
+              map('i', '<C-r>', function()
+                perform_action('uninstall', false)
               end)
 
               return true
