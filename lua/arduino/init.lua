@@ -371,8 +371,15 @@ function M.serial()
   -- Track if we are intentionally killing the monitor to suppress exit code warnings
   local killing_monitor = false
 
-  local job_id = vim.fn.termopen(cmd, {
-    on_exit = function(_, code)
+  -- Start terminal job (interactive) without callbacks
+  local job_id = vim.fn.termopen(cmd)
+
+  -- Handle exit status via event
+  vim.api.nvim_create_autocmd('TermClose', {
+    buffer = buf,
+    once = true,
+    callback = function()
+      local code = vim.v.event.status
       if code ~= 0 and not killing_monitor then
         util.notify('Serial monitor exited with code ' .. code, vim.log.levels.WARN)
       end
@@ -390,9 +397,9 @@ function M.serial()
         -- If using screen, send kill sequences to prevent detaching
         if cmd:match '^screen' then
           -- Send Standard Quit: Ctrl-A, \, y
-          vim.api.nvim_chan_send(job_id, '\001\\y')
+          pcall(vim.api.nvim_chan_send, job_id, '\001\\y')
           -- Send Standard Kill: Ctrl-A, k, y
-          vim.api.nvim_chan_send(job_id, '\001ky')
+          pcall(vim.api.nvim_chan_send, job_id, '\001ky')
         end
         pcall(vim.fn.jobstop, job_id)
       end
