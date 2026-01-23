@@ -365,7 +365,7 @@ function M.serial()
 
   local win = vim.api.nvim_open_win(buf, true, win_opts)
   -- Apply custom highlights (defaults to TelescopePrompt*)
-  vim.api.nvim_win_set_option(win, 'winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle')
+  vim.api.nvim_set_option_value('winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle', { win = win })
 
   -- Track if we are intentionally killing the monitor to suppress exit code warnings
   local killing_monitor = false
@@ -441,7 +441,7 @@ function M.check_logs()
 
   local win = vim.api.nvim_open_win(buf, true, win_opts)
   -- Apply custom highlights (defaults to TelescopePrompt*)
-  vim.api.nvim_win_set_option(win, 'winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle')
+  vim.api.nvim_set_option_value('winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle', { win = win })
 
   -- Enable ANSI colors using terminal channel
   local chan = vim.api.nvim_open_term(buf, {})
@@ -661,7 +661,12 @@ function M.library_manager()
         end
 
         vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-        vim.api.nvim_buf_set_option(self.state.bufnr, 'filetype', 'markdown')
+        vim.bo[self.state.bufnr].filetype = 'markdown'
+        if self.state.winid then
+          vim.wo[self.state.winid].conceallevel = 2
+          vim.wo[self.state.winid].linebreak = true
+          vim.wo[self.state.winid].wrap = true
+        end
       end,
     }
 
