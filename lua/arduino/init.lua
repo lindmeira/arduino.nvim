@@ -3,6 +3,7 @@ local util = require 'arduino.util'
 local boards = require 'arduino.boards'
 local cli = require 'arduino.cli'
 local term = require 'arduino.term'
+local lib = require 'arduino.lib'
 
 local M = {}
 
@@ -41,6 +42,9 @@ local function define_highlights()
     vim.api.nvim_set_hl(0, 'ArduinoWindowBorder', { link = 'TelescopePromptBorder' })
     vim.api.nvim_set_hl(0, 'ArduinoWindowTitle', { link = 'TelescopePromptTitle' })
   end
+
+  vim.api.nvim_set_hl(0, 'ArduinoLibraryInstalled', { fg = '#00ff00', bold = true })
+  vim.api.nvim_set_hl(0, 'ArduinoLibraryOutdated', { fg = '#ffaa00', bold = true })
 end
 
 function M.setup(opts)
@@ -506,6 +510,149 @@ function M.set_baud(baud, is_auto)
   config.options.serial_baud = b
   local prefix = is_auto and 'Baud rate set to ' or 'Baud rate manually set to '
   util.notify(prefix .. b)
+end
+
+function M.library_manager()
+  if not config.options.use_telescope then
+    util.notify('Library Manager requires Telescope support enabled.', vim.log.levels.WARN)
+    return
+  end
+
+  local ok, _ = pcall(require, 'telescope')
+  if not ok then
+    return
+  end
+
+  util.notify('Loading library data...', vim.log.levels.INFO)
+
+  -- Chain async calls: Search -> List Installed -> List Outdated
+  lib.search(function(search_data)
+    if not search_data or not search_data.libraries then
+      util.notify('Failed to load libraries.', vim.log.levels.ERROR)
+      return
+    end
+
+    lib.list_installed(function(installed_data)
+      local installed_map = {}
+      if installed_data and installed_data.installed_libraries then
+        for _, l in ipairs(installed_data.installed_libraries) do
+          if l.library and l.library.name then
+            installed_map[l.library.name] = l.library.version
+          end
+        end
+      end
+
+      lib.list_outdated(function(outdated_data)
+        local outdated_map = {}
+        if outdated_data and outdated_data.libraries then
+          for _, l in ipairs(outdated_data.libraries) do
+            if l.library and l.library.name then
+              outdated_map[l.library.name] = l.release and l.release.version or 'unknown'
+            end
+          end
+        end
+
+        local results = {}
+        for _, item in ipairs(search_data.libraries) do
+          local name = item.name
+          local status_icon = ''
+          local version_info = ''
+          local ordinal_prefix = 'z'
+
+          if installed_map[name] then
+            status_icon = '✓'
+            version_info = ' [' .. installed_map[name] .. ']'
+            ordinal_prefix = 'm' -- Installed
+          end
+
+          if outdated_map[name] then
+            status_icon = '↑'
+            version_info = ' [Update: ' .. outdated_map[name] .. ']'
+            ordinal_prefix = 'a' -- Outdated (top priority)
+          end
+
+          if name then
+            table.insert(results, {
+              name = name,
+              status_icon = status_icon,
+              version_info = version_info,
+              installed = installed_map[name] ~= nil,
+              outdated = outdated_map[name] ~= nil,
+              ordinal = ordinal_prefix .. ' ' .. name,
+            })
+          end
+        end
+
+        local pickers = require 'telescope.pickers'
+        local finders = require 'telescope.finders'
+        local conf = require('telescope.config').values
+        local actions = require 'telescope.actions'
+        local action_state = require 'telescope.actions.state'
+        local entry_display = require 'telescope.pickers.entry_display'
+
+        local displayer = entry_display.create {
+          separator = ' ',
+          items = {
+            { width = 1 }, -- Icon
+            { remaining = true }, -- Name + Version
+          },
+        }
+
+        local function make_display(entry)
+          local icon_hl = entry.outdated and 'ArduinoLibraryOutdated' or (entry.installed and 'ArduinoLibraryInstalled' or 'Normal')
+          return displayer {
+            { entry.status_icon, icon_hl },
+            entry.name .. entry.version_info,
+          }
+        end
+
+        pickers
+          .new({}, {
+            prompt_title = 'Arduino Libraries',
+            finder = finders.new_table {
+              results = results,
+              entry_maker = function(entry)
+                return {
+                  value = entry,
+                  display = make_display,
+                  ordinal = entry.ordinal,
+                  name = entry.name,
+                  status_icon = entry.status_icon,
+                  version_info = entry.version_info,
+                  installed = entry.installed,
+                  outdated = entry.outdated,
+                }
+              end,
+            },
+            sorter = conf.generic_sorter {},
+            attach_mappings = function(prompt_bufnr, map)
+              actions.select_default:replace(function()
+                actions.close(prompt_bufnr)
+                local selection = action_state.get_selected_entry()
+                if not selection then
+                  return
+                end
+                local entry = selection.value
+
+                if entry.outdated then
+                  lib.upgrade(entry.name, function()
+                    M.library_manager()
+                  end)
+                elseif not entry.installed then
+                  lib.install(entry.name, function()
+                    M.library_manager()
+                  end)
+                else
+                  util.notify('Library ' .. entry.name .. ' is already installed.', vim.log.levels.INFO)
+                end
+              end)
+              return true
+            end,
+          })
+          :find()
+      end)
+    end)
+  end)
 end
 
 return M

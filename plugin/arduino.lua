@@ -43,7 +43,11 @@ vim.api.nvim_create_user_command('ArduinoCheckLogs', function()
   arduino.check_logs()
 end, {})
 
-vim.api.nvim_create_user_command('ArduinoInfo', function()
+vim.api.nvim_create_user_command('ArduinoLibraryManager', function()
+  arduino.library_manager()
+end, {})
+
+vim.api.nvim_create_user_command('ArduinoGetInfo', function()
   arduino.get_info()
 end, {})
 
