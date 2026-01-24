@@ -1033,4 +1033,145 @@ function M.core_manager()
   end)
 end
 
+-- Shared fetch function for both Telescope and fallback manager
+local function fetch_library_data(callback)
+  lib.search(function(search_data)
+    if not search_data or not search_data.libraries then
+      util.notify('Failed to load libraries.', vim.log.levels.ERROR)
+      callback(nil)
+      return
+    end
+    lib.list_installed(function(installed_data)
+      local installed_map = {}
+      if installed_data and installed_data.installed_libraries then
+        for _, l in ipairs(installed_data.installed_libraries) do
+          if l.library and l.library.name then
+            installed_map[l.library.name] = l.library.version
+          end
+        end
+      end
+      lib.list_outdated(function(outdated_data)
+        local outdated_map = {}
+        if outdated_data and outdated_data.libraries then
+          for _, l in ipairs(outdated_data.libraries) do
+            if l.library and l.library.name then
+              outdated_map[l.library.name] = l.release and l.release.version or 'unknown'
+            end
+          end
+        end
+        local results = {}
+        for _, item in ipairs(search_data.libraries) do
+          local name = item.name
+          local status_icon = ''
+          local version_info = ''
+          if installed_map[name] then
+            status_icon = '✓'
+            version_info = ' [' .. installed_map[name] .. ']'
+          end
+          if outdated_map[name] then
+            status_icon = '↑'
+            version_info = ' [Update: ' .. outdated_map[name] .. ']'
+          end
+          if name then
+            table.insert(results, {
+              name = name,
+              status_icon = status_icon,
+              version_info = version_info,
+              installed = installed_map[name] ~= nil,
+              outdated = outdated_map[name] ~= nil,
+              details = item,
+            })
+          end
+        end
+        callback(results)
+      end)
+    end)
+  end)
+end
+
+function M.library_manager_fallback()
+  util.notify('Loading library data...', vim.log.levels.INFO)
+  fetch_library_data(function(libraries)
+    if not libraries then return end
+    vim.ui.input({ prompt = 'Filter libraries (type to search): ' }, function(input)
+      if input == nil then
+        util.notify('Library manager cancelled.', vim.log.levels.INFO)
+        return
+      end
+      local filtered = {}
+      local input_lower = input:lower()
+      for _, lib in ipairs(libraries) do
+        if lib.name:lower():find(input_lower, 1, true) then
+          local label = lib.status_icon ~= '' and (lib.status_icon .. ' ') or ''
+          label = label .. lib.name .. lib.version_info
+          table.insert(filtered, { label = label, value = lib })
+        end
+      end
+      if #filtered == 0 then
+        util.notify('No libraries found for: ' .. input, vim.log.levels.WARN)
+        return
+      end
+      vim.ui.select(filtered, {
+        prompt = 'Select Arduino Library:',
+        format_item = function(item) return item.label end
+      }, function(choice)
+        if not choice or not choice.value then
+          util.notify('Library selection cancelled.', vim.log.levels.INFO)
+          return
+        end
+        local actions = {}
+        local selected = choice.value
+        if selected.outdated then
+          table.insert(actions, { label = 'Update', action = 'update' })
+          table.insert(actions, { label = 'Uninstall', action = 'uninstall' })
+        elseif selected.installed then
+          table.insert(actions, { label = 'Uninstall', action = 'uninstall' })
+        else
+          table.insert(actions, { label = 'Install', action = 'install' })
+        end
+        if #actions == 1 then  -- Only one option, skip extra select
+          local act = actions[1].action
+          if act == 'install' then
+            lib.install(selected.name, function() util.notify('Install of ' .. selected.name .. ' complete.') end)
+          elseif act == 'update' then
+            lib.upgrade(selected.name, function() util.notify('Update of ' .. selected.name .. ' complete.') end)
+          elseif act == 'uninstall' then
+            lib.uninstall(selected.name, function() util.notify('Uninstall of ' .. selected.name .. ' complete.') end)
+          end
+          return
+        end
+        vim.ui.select(actions, {
+          prompt = 'Available actions for "'..selected.name..'":',
+          format_item = function(item) return item.label end
+        }, function(act_choice)
+          if not act_choice or not act_choice.action then
+            util.notify('No action taken.', vim.log.levels.INFO)
+            return
+          end
+          if act_choice.action == 'install' then
+            lib.install(selected.name, function() util.notify('Install of ' .. selected.name .. ' complete.') end)
+          elseif act_choice.action == 'update' then
+            lib.upgrade(selected.name, function() util.notify('Update of ' .. selected.name .. ' complete.') end)
+          elseif act_choice.action == 'uninstall' then
+            lib.uninstall(selected.name, function() util.notify('Uninstall of ' .. selected.name .. ' complete.') end)
+          end
+        end)
+      end)
+    end)
+  end)
+end
+
+local orig_library_manager = M.library_manager
+function M.library_manager()
+  if not config.options.use_telescope then
+    return M.library_manager_fallback()
+  end
+  local ok, _ = pcall(require, 'telescope')
+  if ok then
+    return orig_library_manager()
+  else
+    return M.library_manager_fallback()
+  end
+end
+
 return M
