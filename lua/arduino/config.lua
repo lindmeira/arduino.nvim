@@ -19,6 +19,8 @@ M.VALID_BAUD_RATES = {
 }
 
 M.defaults = {
+  -- Set to false to disable emoji in fallback library manager lists
+  library_manager_emoji = true,
   board = 'arduino:avr:uno',
   programmer = '',
   args = '--verbose-upload',

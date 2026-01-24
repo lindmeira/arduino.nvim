@@ -65,6 +65,9 @@ require('arduino').setup({
     
     -- Use arduino-cli (strongly recommended)
     use_cli = true,
+
+    -- Fallback Library Manager status icons (emoji/tick)
+    library_manager_emoji = true, -- set false for tick/up-arrow fallback
 })
 ```
 

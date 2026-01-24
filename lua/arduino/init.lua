@@ -1103,8 +1103,21 @@ function M.library_manager_fallback()
         local input_lower = input:lower()
         for _, lib in ipairs(libraries) do
           if lib.name:lower():find(input_lower, 1, true) then
-            local label = lib.status_icon ~= '' and (lib.status_icon .. ' ') or ''
-            label = label .. lib.name .. lib.version_info
+            local label = lib.name .. lib.version_info
+            local use_emoji = config.options.library_manager_emoji ~= false
+            if use_emoji then
+              if lib.outdated then
+                label = label .. ' 🟠'
+              elseif lib.installed then
+                label = label .. ' 🟢'
+              end
+            else
+              if lib.outdated then
+                label = label .. ' ↑'
+              elseif lib.installed then
+                label = label .. ' ✓'
+              end
+            end
             table.insert(filtered, { label = label, value = lib })
           end
         end

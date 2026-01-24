@@ -6,6 +6,35 @@
 
 ---
 
+## Library Manager Fallback UI Status Symbols
+
+Starting in 2026-01, the fallback Arduino Library Manager UI (used when Telescope is disabled or unavailable) visually marks search results with status indicators as follows:
+
+| Status     | Emoji   | Fallback Symbol |
+|------------|---------|----------------|
+| Installed  | 🟢      | ✓              |
+| Outdated   | 🟠      | ↑              |
+| Available  |  (none) | (none)         |
+
+- By default, emoji are shown at the END of each line in the library list menu ("🟢" for installed, "🟠" for outdated).
+- If emoji are disabled (see `library_manager_emoji` config option) or the terminal does not support emojis, the manager uses a tick "✓" for installed and up-arrow "↑" for outdated.
+- No visual mark is added for libraries that are available but not currently installed/outdated.
+- These symbols are explained in both this AGENTS.md and the README.
+
+**Config:**
+- To disable emoji indicators, set `library_manager_emoji = false` in your plugin configuration table for `require('arduino').setup()`.
+- Example:
+
+```lua
+require('arduino').setup({
+  library_manager_emoji = false,
+})
+```
+
+This makes the fallback list render tick (✓) and up-arrow (↑) ASCII symbols instead.
+
+---
+
 ## 1. Build, Lint & Test Instructions
 
 ### 1.1 Requirements
