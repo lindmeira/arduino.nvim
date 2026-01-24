@@ -67,7 +67,12 @@ require('arduino').setup({
     use_cli = true,
 
     -- Fallback Library Manager status icons (emoji/tick)
-    library_manager_emoji = true, -- set false for tick/up-arrow fallback
+     library_manager_emoji = true, -- set false for tick/up-arrow fallback
+
+     -- When true, the Library Manager results window remains open after install/update/uninstall.
+     -- Repeated actions are possible without leaving the menu. Press <Esc> twice to return to search.
+     -- Default: false (window closes after every action).
+     library_manager_multiselect = false,  
 })
 ```
 
