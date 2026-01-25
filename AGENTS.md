@@ -61,11 +61,11 @@ This makes the fallback list render tick (✓) and up-arrow (↑) ASCII symbols 
   3. Use the following EX commands to trigger plugin features:
      - `:ArduinoVerify` — Compile sketch
      - `:ArduinoUpload` — Compile & upload
-     - `:ArduinoSerial` — Open serial monitor
-     - `:ArduinoAttach [port]` — Board attach
-     - `:ArduinoChooseBoard` — Board FQBN select
-     - `:ArduinoChoosePort` — Serial port select
-     - `:ArduinoUploadAndSerial` — Upload then open serial
+     - `:ArduinoMonitor` — Open serial monitor
+     - `:ArduinoConnectPort [port]` — Connect serial port/board
+     - `:ArduinoSelectBoard` — Board FQBN select
+     - `:ArduinoSelectPort` — Serial port select
+     - `:ArduinoUploadAndMonitor` — Upload then open serial monitor
   4. Check the status line or plugin messages for results.
 
 #### Running a "Single Test/Feature In Isolation"
@@ -170,4 +170,4 @@ This makes the fallback list render tick (✓) and up-arrow (↑) ASCII symbols 
 
 ---
 
-This AGENTS.md was generated via codebase and README.md analysis on 2026-01-23. Revisit and improve as project workflows evolve!
+This AGENTS.md was updated in 2026-01 after a full migration to modern Neovim command naming conventions. All user commands now use clear, verb-based and discoverable names (see above). Review this file after major UX or workflow changes.
