@@ -31,8 +31,12 @@ function M.run_silent(cmd, opts, callback)
     end,
     on_exit = function(_, code)
       if code == 0 then
-        util.notify(success_msg, vim.log.levels.INFO)
-        util.parse_and_notify_memory_usage()
+        local msg = success_msg
+        local stats = util.get_memory_usage_info()
+        if stats then
+          msg = msg .. ' ' .. stats
+        end
+        util.notify(msg, vim.log.levels.INFO)
         if callback then
           vim.schedule(callback)
         end

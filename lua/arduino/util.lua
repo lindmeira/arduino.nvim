@@ -254,8 +254,9 @@ local function format_bytes(b)
   return b .. 'B'
 end
 
---- Parse memory usage from logs and notify user
-function M.parse_and_notify_memory_usage()
+--- Parse memory usage from logs and return a formatted string
+---@return string|nil: Formatted memory usage string or nil if not found
+function M.get_memory_usage_info()
   local log_data = require('arduino.log').get()
   local flash_used, flash_perc, flash_max
   local ram_used, ram_perc, ram_max
@@ -275,7 +276,7 @@ function M.parse_and_notify_memory_usage()
   end
 
   if flash_used and ram_used then
-    local msg = string.format(
+    return string.format(
       'Flash: %s%% (%s/%s), RAM: %s%% (%s/%s).',
       flash_perc,
       format_bytes(flash_used),
@@ -284,8 +285,8 @@ function M.parse_and_notify_memory_usage()
       format_bytes(ram_used),
       format_bytes(ram_max)
     )
-    M.notify(msg)
   end
+  return nil
 end
 
 return M
