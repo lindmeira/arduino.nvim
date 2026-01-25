@@ -22,10 +22,6 @@ M.defaults = {
   -- Set to false to disable emoji in fallback library/core manager lists
   manager_emoji = true,
 
-  -- If true, results window remains after any install/update/uninstall.
-  -- Enables repeated installs in one invocation. Double <Esc> always returns to the search window (not normal mode).
-  -- If false (default), window closes after action.
-  library_manager_multiselect = false,
   board = 'arduino:avr:uno',
   programmer = '',
   args = '--verbose-upload',

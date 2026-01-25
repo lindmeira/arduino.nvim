@@ -24,14 +24,11 @@ Starting in 2026-01, the fallback Arduino Library Manager UI (used when Telescop
 **Config:**
 - To disable emoji indicators, set `manager_emoji = false` in your plugin configuration table for `require('arduino').setup()`.
 
-- To enable persistent, multi-selection behavior in the Library Manager (so the results window stays open after each install/uninstall/update and you can take repeated actions in one session), set `library_manager_multiselect = true` in your configuration. When enabled, pressing <Esc> twice from the results window returns you to the search prompt (rather than exiting). Default is `false` for single-action workflow.
-
 - Example:
 
 ```lua
 require('arduino').setup({
   manager_emoji = false,
-  library_manager_multiselect = true, -- NEW: persistent multi-action mode
 })
 ```
 
