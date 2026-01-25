@@ -768,15 +768,144 @@ function M.library_manager()
   end)
 end
 
+local function fetch_core_data(callback)
+  core.search(function(search_data)
+    if not search_data then
+      util.notify('Failed to load cores.', vim.log.levels.ERROR)
+      callback(nil)
+      return
+    end
+
+    -- Normalize search_data (usually a list of objects)
+    local search_list = search_data
+    if search_data.platforms then
+      search_list = search_data.platforms
+    end
+
+    core.list_installed(function(installed_data)
+      local installed_map = {}
+      if installed_data then
+        local list = installed_data
+        if installed_data.platforms then
+          list = installed_data.platforms
+        end
+        for _, c in ipairs(list) do
+          if c.id then
+            installed_map[c.id] = c.installed_version or 'installed'
+          end
+        end
+      end
+
+      core.list_outdated(function(outdated_data)
+        local outdated_map = {}
+        if outdated_data and outdated_data.platforms then
+          for _, p in ipairs(outdated_data.platforms) do
+            if p.id then
+              outdated_map[p.id] = p.latest or 'unknown'
+            end
+          end
+        end
+
+        local results = {}
+        for _, item in ipairs(search_list) do
+          local id = item.id
+          local latest_ver = item.latest_version or ''
+          local name = id
+          if item.releases and latest_ver ~= '' and item.releases[latest_ver] then
+            name = item.releases[latest_ver].name or id
+          end
+
+          local status_icon = ''
+          local version_info = ''
+          if installed_map[id] then
+            status_icon = '✓'
+            version_info = ' [' .. installed_map[id] .. ']'
+          end
+          if outdated_map[id] then
+            status_icon = '↑'
+            version_info = ' [Update: ' .. outdated_map[id] .. ']'
+          end
+
+          if id then
+            table.insert(results, {
+              id = id,
+              name = name,
+              status_icon = status_icon,
+              version_info = version_info,
+              installed = installed_map[id] ~= nil,
+              outdated = outdated_map[id] ~= nil,
+              details = item,
+            })
+          end
+        end
+        callback(results)
+      end)
+    end)
+  end)
+end
+
+function M.core_manager_fallback()
+  util.notify('Loading core data...', vim.log.levels.INFO)
+  fetch_core_data(function(cores)
+    if not cores then return end
+
+    local filtered = {}
+    for _, c in ipairs(cores) do
+      local label = c.id .. ' (' .. c.name .. ')' .. c.version_info
+      local use_emoji = config.options.library_manager_emoji ~= false
+      if use_emoji then
+        if c.outdated then
+          label = label .. ' 🟠'
+        elseif c.installed then
+          label = label .. ' 🟢'
+        end
+      else
+        if c.outdated then
+          label = label .. ' ↑'
+        elseif c.installed then
+          label = label .. ' ✓'
+        end
+      end
+      table.insert(filtered, { label = label, value = c })
+    end
+
+    vim.ui.select(filtered, {
+      prompt = 'Select Arduino Core:',
+      format_item = function(item) return item.label end
+    }, function(choice)
+      if not choice or not choice.value then
+        util.notify('Core selection cancelled.', vim.log.levels.INFO)
+        return
+      end
+      local selected = choice.value
+      local action
+      if selected.outdated then
+        action = 'update'
+      elseif selected.installed then
+        action = 'uninstall'
+      else
+        action = 'install'
+      end
+
+      if action == 'install' then
+        core.install(selected.id)
+      elseif action == 'update' then
+        core.upgrade(selected.id)
+      elseif action == 'uninstall' then
+        core.uninstall(selected.id)
+      end
+    end)
+  end)
+end
+
 function M.core_manager()
   if not config.options.use_telescope then
-    util.notify('Core Manager requires Telescope support enabled.', vim.log.levels.WARN)
-    return
+    return M.core_manager_fallback()
   end
 
   local ok, _ = pcall(require, 'telescope')
   if not ok then
-    return
+    return M.core_manager_fallback()
   end
 
   util.notify('Loading core data...', vim.log.levels.INFO)
