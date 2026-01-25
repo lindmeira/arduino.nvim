@@ -833,7 +833,7 @@ function M.core_manager_fallback()
 
     local filtered = {}
     for _, c in ipairs(cores) do
-      local label = c.id .. ' (' .. c.name .. ')' .. c.version_info
+      local label = c.id .. c.version_info
       local use_emoji = config.options.manager_emoji ~= false
       if use_emoji then
         if c.outdated then
