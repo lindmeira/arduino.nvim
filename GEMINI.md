@@ -45,6 +45,7 @@ require('arduino').setup({
     -- See lua/arduino/config.lua for full defaults
     auto_baud = true,
     serial_baud = 9600,
+    serial_cmd = 'arduino-cli',
 })
 ```
 

@@ -54,8 +54,9 @@ require('arduino').setup({
     -- Set to nil to force explicit selection, but 'arduino:avr:uno' is safer for LSP startup.
     board = 'arduino:avr:uno', 
     
-    -- Serial port globs to search for
-    serial_port_globs = { "/dev/ttyACM*", "/dev/ttyUSB*" },
+    -- Use arduino-cli for the serial monitor (default)
+    -- Other supported values: 'screen', 'minicom', 'picocom'
+    serial_cmd = 'arduino-cli',
     
     -- Baud rate for the internal serial monitor
     serial_baud = 9600,

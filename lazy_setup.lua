@@ -9,10 +9,10 @@ return {
     require('arduino').setup {
       auto_baud = true,
       serial_baud = 57600,
+      -- serial_cmd = 'screen', -- 'arduino-cli' (default), 'screen', 'minicom' or 'picocom'
       -- manager_emoji = false, -- Defaults to true
       -- use_telescope = false, -- Defaults to true if available
-      -- build_path = "{project_dir}/build",
-      -- serial_cmd = 'arduino-cli monitor -p {port} --config baudrate={baud}',
+      -- build_path = '{project_dir}/build',
       -- floating_window = { -- Configure floating windows style (logs, monitor)
       --   style = 'telescope', -- 'telescope' (default) or 'lualine'
       -- },

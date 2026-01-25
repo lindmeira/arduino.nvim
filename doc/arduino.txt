@@ -68,9 +68,19 @@ The programmer type to use when compiling and uploading. See also
   let g:arduino_programmer = 'arduino:usbtinyisp'
 <
                                                          *'g:arduino_serial_cmd'*
-Command used to connect to the serial port for debugging. The strings '{port}'
+Command or tool used to connect to the serial port for debugging. 
+Defaults to 'arduino-cli'.
+
+Supported tool names (automatically expanded to full commands):
+ - 'arduino-cli'
+ - 'screen'
+ - 'minicom'
+ - 'picocom'
+
+Alternatively, a full command string can be provided. The strings '{port}'
 and '{baud}' will be replaced with the port and baud values. >
-  let g:arduino_serial_cmd = 'screen {port} {baud}'
+  let g:arduino_serial_cmd = 'arduino-cli'
+  let g:arduino_serial_cmd = 'screen'
   let g:arduino_serial_cmd = 'picocom {port} -b {baud} -l'
 <
 

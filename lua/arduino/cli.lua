@@ -121,11 +121,29 @@ function M.get_serial_command()
   end
 
   local cmd = config.options.serial_cmd
+
+  -- Expand simple tool names into templates
+  if cmd == 'arduino-cli' then
+    cmd = 'arduino-cli monitor -p {port} --config baudrate={baud}'
+  elseif cmd == 'screen' then
+    cmd = 'screen {port} {baud}'
+  elseif cmd == 'minicom' then
+    cmd = 'minicom -D {port} -b {baud}'
+  elseif cmd == 'picocom' then
+    cmd = 'picocom {port} -b {baud} -l'
+  end
+
   -- Check if the first word of the command is executable
   local exe = cmd:match '^%S+'
   if vim.fn.executable(exe) ~= 1 then
-    -- Fallback to arduino-cli monitor if the configured command isn't available
-    cmd = 'arduino-cli monitor -p {port} --config baudrate={baud}'
+    -- Fallback to arduino-cli monitor if the configured tool isn't available
+    if exe ~= 'arduino-cli' then
+      util.notify('Configured serial tool "' .. exe .. '" not found, falling back to arduino-cli.', vim.log.levels.WARN)
+      cmd = 'arduino-cli monitor -p {port} --config baudrate={baud}'
+    else
+      util.notify('arduino-cli not found in PATH.', vim.log.levels.ERROR)
+      return nil
+    end
   end
 
   cmd = cmd:gsub('{port}', port)
