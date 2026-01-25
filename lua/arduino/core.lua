@@ -91,17 +91,26 @@ end
 
 function M.install(id, callback)
   local cmd = 'arduino-cli core install "' .. id .. '"'
-  term.run_silent(cmd, 'Core Installation', callback)
+  term.run_silent(cmd, {
+    success = 'Core ' .. id .. ' installed successfully.',
+    fail = 'Failed to install core ' .. id .. '. Check logs with :ArduinoCheckLogs.'
+  }, callback)
 end
 
 function M.uninstall(id, callback)
   local cmd = 'arduino-cli core uninstall "' .. id .. '"'
-  term.run_silent(cmd, 'Core Removal', callback)
+  term.run_silent(cmd, {
+    success = 'Core ' .. id .. ' removed successfully.',
+    fail = 'Failed to remove core ' .. id .. '. Check logs with :ArduinoCheckLogs.'
+  }, callback)
 end
 
 function M.upgrade(id, callback)
   local cmd = 'arduino-cli core upgrade "' .. id .. '"'
-  term.run_silent(cmd, 'Core Upgrade', callback)
+  term.run_silent(cmd, {
+    success = 'Core ' .. id .. ' upgraded successfully.',
+    fail = 'Failed to upgrade core ' .. id .. '. Check logs with :ArduinoCheckLogs.'
+  }, callback)
 end
 
 return M

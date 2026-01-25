@@ -9,7 +9,16 @@ function M.run(cmd)
   vim.cmd 'startinsert'
 end
 
-function M.run_silent(cmd, title, callback)
+function M.run_silent(cmd, opts, callback)
+  local success_msg, fail_msg
+  if type(opts) == 'table' then
+    success_msg = opts.success
+    fail_msg = opts.fail
+  else
+    success_msg = opts .. ' successful.'
+    fail_msg = opts .. ' failed. Check logs with :ArduinoCheckLogs.'
+  end
+
   log.clear()
   log.add('Running: ' .. cmd)
 
@@ -22,13 +31,13 @@ function M.run_silent(cmd, title, callback)
     end,
     on_exit = function(_, code)
       if code == 0 then
-        util.notify(title .. ' successful.', vim.log.levels.INFO)
+        util.notify(success_msg, vim.log.levels.INFO)
         util.parse_and_notify_memory_usage()
         if callback then
           vim.schedule(callback)
         end
       else
-        util.notify(title .. ' failed. Check logs with :ArduinoCheckLogs.', vim.log.levels.ERROR)
+        util.notify(fail_msg, vim.log.levels.ERROR)
       end
     end,
   })

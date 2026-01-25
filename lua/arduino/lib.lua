@@ -92,17 +92,26 @@ end
 
 function M.install(name, callback)
   local cmd = 'arduino-cli lib install "' .. name .. '"'
-  term.run_silent(cmd, 'Library Installation', callback)
+  term.run_silent(cmd, {
+    success = 'Library ' .. name .. ' installed successfully.',
+    fail = 'Failed to install library ' .. name .. '. Check logs with :ArduinoCheckLogs.'
+  }, callback)
 end
 
 function M.uninstall(name, callback)
   local cmd = 'arduino-cli lib uninstall "' .. name .. '"'
-  term.run_silent(cmd, 'Library Removal', callback)
+  term.run_silent(cmd, {
+    success = 'Library ' .. name .. ' removed successfully.',
+    fail = 'Failed to remove library ' .. name .. '. Check logs with :ArduinoCheckLogs.'
+  }, callback)
 end
 
 function M.upgrade(name, callback)
   local cmd = 'arduino-cli lib upgrade "' .. name .. '"'
-  term.run_silent(cmd, 'Library Upgrade', callback)
+  term.run_silent(cmd, {
+    success = 'Library ' .. name .. ' upgraded successfully.',
+    fail = 'Failed to upgrade library ' .. name .. '. Check logs with :ArduinoCheckLogs.'
+  }, callback)
 end
 
 return M
