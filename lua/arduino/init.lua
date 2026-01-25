@@ -1136,16 +1136,28 @@ function M.library_manager_fallback()
         end
 
         if action == 'install' then
-          lib.install(selected.name, function()
-            util.notify('Install of ' .. selected.name .. ' complete.')
+          lib.install(selected.name, function(err)
+            if err then
+              util.notify('Failed to install library ' .. selected.name .. ': ' .. tostring(err), vim.log.levels.ERROR)
+            else
+              util.notify('Library ' .. selected.name .. ' installed successfully.')
+            end
           end)
         elseif action == 'update' then
-          lib.upgrade(selected.name, function()
-            util.notify('Update of ' .. selected.name .. ' complete.')
+          lib.upgrade(selected.name, function(err)
+            if err then
+              util.notify('Failed to update library ' .. selected.name .. ': ' .. tostring(err), vim.log.levels.ERROR)
+            else
+              util.notify('Library ' .. selected.name .. ' updated successfully.')
+            end
           end)
         elseif action == 'uninstall' then
-          lib.uninstall(selected.name, function()
-            util.notify('Uninstall of ' .. selected.name .. ' complete.')
+          lib.uninstall(selected.name, function(err)
+            if err then
+              util.notify('Failed to uninstall library ' .. selected.name .. ': ' .. tostring(err), vim.log.levels.ERROR)
+            else
+              util.notify('Library ' .. selected.name .. ' uninstalled successfully.')
+            end
           end)
         end
         -- Picker window closes regardless, notification will arrive asynchronously
