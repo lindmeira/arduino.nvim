@@ -1,172 +1,185 @@
 # AGENTS.md
 
-> **Repository:** vim-arduino (Neovim plugin for Arduino integration)
+> **Repository:** arduino.nvim (Neovim plugin for Arduino integration)
 > 
-> **Purpose:** This guide is for software/code-writing AGENTS (human or machine) working in this repository. It summarizes build/test workflows, coding conventions, error handling, agent best-practices, and expected style, based on analysis of this codebase and its documentation.
+> **Purpose:** This guide is for software/code-writing AGENTS (human or machine) working in this repository. It summarizes build/test workflows, coding conventions, error handling, agent best-practices, and expected style, based on thorough analysis and ongoing updates.
 
 ---
 
-## Library Manager Fallback UI Status Symbols
+## Library & Core Manager Fallback UI Status Symbols
 
-Starting in 2026-01, the fallback Arduino Library Manager UI (used when Telescope is disabled or unavailable) visually marks search results with status indicators as follows:
+Both the Arduino **Library Manager** and **Core Manager** fallback UIs (used when Telescope is disabled or unavailable) visually mark search results with status indicators:
 
 | Status     | Emoji   | Fallback Symbol |
 |------------|---------|----------------|
 | Installed  | 🟢      | ✓              |
 | Outdated   | 🟠      | ↑              |
-| Available  |  (none) | (none)         |
+| Available  | (none)  | (none)         |
 
-- By default, emoji are shown at the END of each line in the library list menu ("🟢" for installed, "🟠" for outdated).
-- If emoji are disabled (see `manager_emoji` config option) or the terminal does not support emojis, the manager uses a tick "✓" for installed and up-arrow "↑" for outdated.
-- No visual mark is added for libraries that are available but not currently installed/outdated.
-- These symbols are explained in both this AGENTS.md and the README.
+- Emoji/tick/up-arrow indicators appear for both cores and libraries at the END of each line (🟢 for installed, 🟠 for outdated, or tick/arrow if `manager_emoji = false`).
+- No visual mark for libraries/cores that are available but not installed/outdated.
+- Highlight groups (e.g., `ArduinoLibraryInstalled`, `ArduinoLibraryOutdated`) are applied for richer UI integration.
+- Multi-selection and richer preview are available only with Telescope (`use_telescope = true`). Fallback UI supports only single selection and minimal preview.
+- Symbols and config options are explained here and in the README.
 
 **Config:**
-- To disable emoji indicators, set `manager_emoji = false` in your plugin configuration table for `require('arduino').setup()`.
-
+- To disable emoji indicators, set `manager_emoji = false` in the plugin configuration for `require('arduino').setup()`.
+- To force fallback UI, set `use_telescope = false`.
 - Example:
 
 ```lua
 require('arduino').setup({
   manager_emoji = false,
+  use_telescope = false,
 })
 ```
 
-This makes the fallback list render tick (✓) and up-arrow (↑) ASCII symbols instead. When `library_manager_multiselect=true`, the menu is persistent for repeated install operations (see README for workflow details).
+This will make the fallback lists use tick (✓) and up-arrow (↑) ASCII symbols instead of emoji.
 
 ---
 
 ## 1. Build, Lint & Test Instructions
 
 ### 1.1 Requirements
-- **Neovim 0.7+** (required, as this is a Neovim plugin)
-- **arduino-cli** (https://arduino.github.io/arduino-cli/latest/installation/) - **MANDATORY**
-- (Recommended) **arduino-language-server** (for LSP integration)
+- **Neovim 0.7+** (required)
+- **arduino-cli** ([Install guide](https://arduino.github.io/arduino-cli/latest/installation/)) — **MANDATORY**
+- **arduino-language-server** (optional, recommended for LSP integration)
 
 ### 1.2 Building/Installing the Plugin
-- This repository is a pure Lua plugin; there is no build process. To install:
-  - Place in your `runtimepath` (as per `README.md`).
-  - For development, reload your plugin using Neovim’s `:luafile` or `:PackerCompile`/`lazy.nvim` equivalent.
+- This repository is a pure Lua plugin; there is no build process.
+- Installation options:
+  - **lazy.nvim**:
+    ```lua
+    {
+      "lindmeira/arduino.nvim",
+      ft = "arduino",
+      config = function()
+        require("arduino").setup({ ... })
+      end,
+    }
+    ```
+  - **packer.nvim/manual**: Place in `runtimepath` and reload modified modules with `:luafile` or `:PackerCompile`/`lazy.nvim` reloads.
 
-### 1.3 Linting
-- There is **no automatic linter/config** present (e.g., no `.luacheckrc`).
-- Agents should **self-enforce Lua idioms** as outlined in Section 2.
-- (Optional) Use [`luacheck`](https://github.com/mpeterv/luacheck) or [`stylua`](https://github.com/JohnnyMorganz/StyLua) with default settings for error/warning catching and formatting.
+### 1.3 Configuration Options
+- All config options can be set in `require('arduino').setup({ ... })`:
+  - `board` — Default board (FQBN; e.g. 'arduino:avr:uno')
+  - `programmer` — Optional programmer
+  - `serial_cmd` — Serial monitor command; options: `'arduino-cli'` (default), `'screen'`, `'minicom'`, `'picocom'` or full custom string
+  - `serial_baud` — Baud rate (default 9600)
+  - `auto_baud` — If `true`, detect baud rate from `Serial.begin()` in sketch (default: `true`)
+  - `manager_emoji` — `true` for emoji, `false` for tick/arrow fallback
+  - `use_telescope` — `true` for enhanced picker; `false` for fallback UI
+  - `build_path` — Custom build target directory
+  - `floating_window` — UI style customization (`style = 'telescope'` or `'lualine'`)
 
-### 1.4 Testing & Verification
-- **No automated test suite.**
-- To manually test the plugin:
-  1. Launch Neovim with this plugin loaded (via packer.nvim, lazy.nvim, or manual `runtimepath`).
-  2. Open an Arduino sketch (`.ino` file or folder containing one). The plugin auto-initializes and creates `sketch.yaml` as needed.
-  3. Use the following EX commands to trigger plugin features:
-     - `:ArduinoVerify` — Compile sketch
+- Most config options persist via `sketch.yaml` and survive plugin restarts. Exception: baud rate (`serial_baud`), which may be session-only if changed interactively.
+
+### 1.4 Testing & Validation
+- **No automated test suite or linter by default.** Agents must manually validate code and workflows:
+  1. Launch Neovim with the plugin loaded.
+  2. Open an Arduino sketch (`.ino`); plugin creates/refreshes `sketch.yaml`.
+  3. Use these EX commands for features:
+     - `:ArduinoVerify` — Compile
      - `:ArduinoUpload` — Compile & upload
-     - `:ArduinoMonitor` — Open serial monitor
-     - `:ArduinoSelectBoard` — Board FQBN select
-     - `:ArduinoSelectPort` — Serial port select
-     - `:ArduinoUploadAndMonitor` — Upload then open serial monitor
-  4. Check the status line or plugin messages for results.
+     - `:ArduinoMonitor` — Serial monitor
+     - `:ArduinoSelectBoard` — Select board
+     - `:ArduinoSelectPort` — Select serial port
+     - `:ArduinoUploadAndMonitor` — Upload + monitor
+     - `:ArduinoLibraryManager` — Library management (install/update/remove)
+     - `:ArduinoCoreManager` — Core management (install/update/remove)
+     - `:ArduinoSelectProgrammer` — Select programmer
+     - `:ArduinoSetBaud` — Set baud rate (interactive)
+     - `:ArduinoGetInfo` — Show config info
+     - `:ArduinoCheckLogs` — Show log buffer
+  4. Check statusline/messages/logs for results.
 
-#### Running a "Single Test/Feature In Isolation"
-- Each command above can be run individually to check a feature. There are no test files or test runners. Agents should:
-  - Reload code (using e.g. `:luafile %` for modified module, or `:PackerCompile`/`lazy reload` as appropriate)
-  - Open `.ino` file, then run a specific command interactively in Neovim.
-  - Inspect LSP or command feedback in Neovim for errors or correctness.
-- For deeper debugging, print/log messages via `vim.notify` or `vim.api.nvim_out_write` in modules.
+#### Statusline
+- Automatic Lualine integration: Arduino status will appear in `lualine_x` for Arduino files; manual integration available via `require('arduino.status').string()`.
 
-#### CI/Automation
-- Agents may wish to spin up a Neovim headless session with the plugin loaded to script some checks. There is no headless test harness included yet.
+#### Manual Test Guidance for Agents
+- Reload plugin with `:luafile %`, `:PackerCompile`, or equivalent after changes.
+- Open `.ino` file, trigger commands, inspect feedback/logs as described above.
+- Print/log debug messages using `vim.notify` (and `vim.api.nvim_out_write`) for diagnostics.
 
-#### Fallback Library Manager UI (2026-01+)
-- When Telescope is not available, invoking the Library Manager opens a results window showing all libraries found by `arduino-cli lib search ""`.
-- Type to filter the list and pick a library.
-- When a library is selected and <Enter> is pressed, the appropriate install/update/uninstall action is triggered asynchronously. The picker window closes immediately and a notification will indicate result (success/failure).
-- Multi-selection mode is not available in fallback mode at this time.
+#### Headless/Automation
+- No CI/headless test harness as of 2026; agents may script Neovim sessions for feature checks. Add documentation and update AGENTS.md if automation/testing tools/scripts are added in future.
 
 ---
 
 ## 2. Coding Style Guidelines
 
-### 2.1 Imports
-- Use `require 'modulename'` for all imports.
-- Module-local state should always use `local` unless explicitly exporting, e.g.:
-  ```lua
-  local config = require 'arduino.config'
-  ```
-
-### 2.2 Module Definition
-- Define all modules as follows:
+### 2.1 Imports & Module Definition
+- Use `require 'modulename'` for imports.
+- Define modules as:
   ```lua
   local M = {}
   -- ...
   return M
   ```
-- Public functions should be attached to `M`.
-- Private helpers should use plain `local function ...`.
+- Attach public functions to `M`; private helpers as plain `local function ...`.
+- ALWAYS prefer `local` module state (guard against global variable pollution).
 
-### 2.3 Formatting
-- **Indentation:** Use 2 spaces, NO tabs.
-- **Line length:** Aim for <= 100 chars, 80 is optimal.
-- **Brace style:** Control blocks and function definitions open on the same line.
-- **Whitespace:** Use blank lines to separate logical blocks.
-- **Semicolons:** Do not use semicolons.
-- **Commas:** Always include trailing commas for multiline tables.
+### 2.2 Formatting & Naming
+- Indent with 2 spaces, NO tabs.
+- Line length <= 100 chars (prefer 80).
+- Trailing commas for multiline tables.
+- Snake_case for variables, functions, and module tables (constants: ALL_CAPS/CamelCase ok for common idioms).
+- Filenames: snake_case or lowercase only.
 
-### 2.4 Naming Conventions
-- Variables, functions: **snake_case**
-  - `function my_helper_function()`
-- Module table: `M`
-- Constants & tables: `ALL_CAPS` or CamelCase OK if widespread (e.g. `VALID_BAUD_RATES`)
-- File names: snake_case or all lowercase.
+### 2.3 Error Handling
+- Use `pcall` for potentially erroring calls (JSON, require, IO).
+- Always surface errors/warnings with `vim.notify(msg, level, {title=...})` or `vim.notify_once` if repeated.
+- For return-value errors, return `nil` or `false` and log the error.
+- DO NOT swallow errors unless critically necessary; always log/notify for visibility.
+- For major issues or workflow events, log via plugin status or `:ArduinoCheckLogs`.
 
-### 2.5 Types/Annotations
-- No explicit types in Lua. Use clear docstrings or comments for parameter expectations.
-- Prefer doc comments for key module exports and public APIs.
-- Use `---@param`/`---@return` style for compatibility with LSP-aware tools.
-
-### 2.6 Error Handling
-- Use `pcall` for potentially erroring function calls (e.g., JSON parse, require, IO).
-- Plugin and user feedback:
-  - Prefer `vim.notify(msg, level, {title=...})` for major errors/warnings/info.
-  - For return-value errors, return `nil` or `false`, log the error, and document behavior.
-- Do NOT swallow errors unless silence is critical; notify user or caller (agent/human) in all other cases.
-
-### 2.7 Table Manipulation
-- Use `vim.tbl_deep_extend` for merging tables/options.
-- Avoid mutating shared tables unless clearly documented.
-
-### 2.8 Comments & Documentation
-- Use single-line double dash `--` for comments.
-- Block docs and public symbols use docstring style:
+### 2.4 Comments, Documentation, & LSP
+- Use single-dash comments for inline docs: `-- explanatory comment`
+- For functions or public APIs, prefer block-comments or LSP docstrings:
   ```lua
   --- @param foo string: the foo parameter
   function M.bar(foo)
   ```
+- Use `---@param` / `---@return` style for LSP support.
+
+### 2.5 Table Manipulation and Updates
+- Use `vim.tbl_deep_extend` for merging config tables.
+- Avoid mutating shared tables unless documented.
+
+### 2.6 Anti-patterns to Avoid
+- Global variable pollution; always prefer locals and module tables.
+- Large functions; prefer to break logic for readability.
+- Magic, hardcoded values; use config, constants, or document clearly.
+- Silence on error; ensure issues are surfaced via notify/log.
+- UI/OS-specific hacks; encapsulate and always document or guard by platform.
+- Legacy/deprecated commands or commented dead code (marked as "TO BE REMOVED" in code) — these should be cleaned up to maintain clarity.
+- Reload without appropriate guards; always use `if vim.g.loaded_... then return end` at module start to prevent repeat setup side effects.
 
 ---
 
-## 3. Agent Operation Best Practices
+## 3. Agent Operation & Automation Best Practices
 
-- When making changes, **reload the plugin** in Neovim and CHECK for errors via the command line or requiring the module.
-- Each feature can be checked by invoking its command from Neovim (see 1.4 above).
-- Use the commands in the table from README.md for interactive validation.
-- When automating, prefer Neovim’s RPC, command-line interface, or API.
-- No test directory: if adding new functionality, consider adding minimal regression or smoke tests as `.lua` scripts suitable for Neovim’s `busted` or as helper commands.
-- Changes should **never break Neovim startup or cause global side effects**—check for proper use of `if vim.g.loaded_... then return end` guards.
-
-### 3.1 Anti-patterns to Avoid
-- Global variable pollution: always prefer locals and module tables.
-- Huge functions: break up logic for readability.
-- Hardcoded, magic values: use config or documented constants.
-- Silence on error: ensure issues are surfaced to user/human/agent.
-- UI or OS-specific hacks: encapsulate and document or guard by platform.
+- After code changes, **reload the plugin** in Neovim and always check for errors via command line, status output, or requiring the module interactively.
+- Validate features by triggering commands in Neovim (see above command list; mapped one-to-one to plugin actions).
+- Use `vim.notify` and log buffer for visible agent/human feedback for all potentially error-prone actions.
+- When automating, use proper Neovim RPC, CLI, or session API for scripting checks and reloads.
+- If adding new features, consider `.lua` smoke tests in module files or helpers — document this in AGENTS.md as soon as added.
+- No test directory or automated harness as of 2026; if you introduce CI/linter, update this file and add example scripts.
+- For headless/automation, script test cases using Neovim session, load plugin, run commands, and check logs/output for expected errors and feedback.
+- Never break Neovim startup or cause global/plugin-wide side effects; always use loaded guards.
 
 ---
 
-## 4. Human and Agent Collaboration
-- AGENTS.md should be kept up to date. If you add CI/test harness, linter config, or major new conventions, **update this file**.
-- If you automate something not covered here, please document the pattern and commands used, for future agent coders.
+## 4. Human and Agent Collaboration & Change Practices
+
+- **AGENTS.md must be kept up to date.**
+  - If you add new features, workflows, CI/test harness, linter, or alter major conventions, update this file AND the README.
+  - Document any new automation scripts, CLI, helpers, or plugin UX patterns as soon as introduced.
+  - If you solve problems outside the scope of the doc, add a section and detail for future agents.
+- If conventions change, make cross-references between sections for discoverability (e.g., "see Coding Standards for reload safety").
+- For major workflow changes, onboard future agents by providing example scripts, workflow demos, config snippets.
+- Reference latest Neovim-Lua ecosystem standards and community guidelines where appropriate.
 
 ---
 
-This AGENTS.md was updated in 2026-01 after a full migration to modern Neovim command naming conventions. All user commands now use clear, verb-based and discoverable names (see above). Review this file after major UX or workflow changes.
+**This AGENTS.md was comprehensively updated in Jan 2026 after a full audit and workflow review. All command names, configuration options, UI workflows, coding/operation standards, and anti-patterns represent the latest best-practices and realities of this repository. Review this file after any major UX, plugin, or documentation change.**
