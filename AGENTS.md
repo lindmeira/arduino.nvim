@@ -62,7 +62,6 @@ This makes the fallback list render tick (✓) and up-arrow (↑) ASCII symbols 
      - `:ArduinoVerify` — Compile sketch
      - `:ArduinoUpload` — Compile & upload
      - `:ArduinoMonitor` — Open serial monitor
-     - `:ArduinoConnectPort [port]` — Connect serial port/board
      - `:ArduinoSelectBoard` — Board FQBN select
      - `:ArduinoSelectPort` — Serial port select
      - `:ArduinoUploadAndMonitor` — Upload then open serial monitor

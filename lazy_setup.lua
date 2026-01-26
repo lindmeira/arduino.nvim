@@ -19,7 +19,6 @@ return {
     }
   end,
   keys = {
-    { '<leader>aa', '<cmd>ArduinoConnectPort<cr>', desc = 'Connect Port' },
     { '<leader>ab', '<cmd>ArduinoSelectBoard<cr>', desc = 'Select Board' },
     { '<leader>ac', '<cmd>ArduinoVerify<cr>', desc = 'Compile/Verify' },
     { '<leader>af', '<cmd>ArduinoUpload<cr>', desc = 'Flash Firmware' },

@@ -183,58 +183,59 @@ local function select_item(items, prompt, callback)
   end)
 end
 
-function M.attach(port)
-  local function perform_attach(p)
-    local cmd = { 'arduino-cli', 'board', 'attach', '-p', p }
-    -- This command needs to run in the background, not terminal
-    vim.fn.jobstart(cmd, {
-      on_exit = function(id, code, _)
-        if code == 0 then
-          vim.g.arduino_serial_port = p
-          -- Update sketch config
-          util.get_sketch_config(vim.fn.expand '%:p:h') -- Refresh cache/lookup
-
-          -- Try to detect the board from the port we just attached to
-          local handle = io.popen 'arduino-cli board list --format json'
-          if handle then
-            local result = handle:read '*a'
-            handle:close()
-            local ok, data = pcall(vim.json.decode, result)
-            if ok and data then
-              for _, item in ipairs(data) do
-                if item.port and item.port.address == p and item.matching_boards and #item.matching_boards > 0 then
-                  config.options.board = item.matching_boards[1].fqbn
-                  break
-                end
-              end
-            end
-          end
-
-          util.notify('Sketch attached to ' .. (config.options.board or 'unknown'))
-        else
-          util.notify('Failed to attach sketch.', vim.log.levels.ERROR)
-        end
-      end,
-    })
-  end
-
-  if port then
-    perform_attach(port)
-  else
-    local ports = cli.get_ports(true)
-    if #ports == 0 then
-      util.notify('No serial ports found.', vim.log.levels.WARN)
-    elseif #ports == 1 then
-      perform_attach(ports[1])
-    else
-      local items = {}
-      for _, p in ipairs(ports) do
-        table.insert(items, { label = p, value = p })
-      end
-      select_item(items, 'Select Port to Attach', perform_attach)
-    end
-  end
-end
+-- TO BE REMOVED
+-- function M.attach(port)
+--   local function perform_attach(p)
+--     local cmd = { 'arduino-cli', 'board', 'attach', '-p', p }
+--     -- This command needs to run in the background, not terminal
+--     vim.fn.jobstart(cmd, {
+--       on_exit = function(id, code, _)
+--         if code == 0 then
+--           vim.g.arduino_serial_port = p
+--           -- Update sketch config
+--           util.get_sketch_config(vim.fn.expand '%:p:h') -- Refresh cache/lookup
+--
+--           -- Try to detect the board from the port we just attached to
+--           local handle = io.popen 'arduino-cli board list --format json'
+--           if handle then
+--             local result = handle:read '*a'
+--             handle:close()
+--             local ok, data = pcall(vim.json.decode, result)
+--             if ok and data then
+--               for _, item in ipairs(data) do
+--                 if item.port and item.port.address == p and item.matching_boards and #item.matching_boards > 0 then
+--                   config.options.board = item.matching_boards[1].fqbn
+--                   break
+--                 end
+--               end
+--             end
+--           end
+--
+--           util.notify('Sketch attached to ' .. (config.options.board or 'unknown'))
+--         else
+--           util.notify('Failed to attach sketch.', vim.log.levels.ERROR)
+--         end
+--       end,
+--     })
+--   end
+--
+--   if port then
+--     perform_attach(port)
+--   else
+--     local ports = cli.get_ports(true)
+--     if #ports == 0 then
+--       util.notify('No serial ports found.', vim.log.levels.WARN)
+--     elseif #ports == 1 then
+--       perform_attach(ports[1])
+--     else
+--       local items = {}
+--       for _, p in ipairs(ports) do
+--         table.insert(items, { label = p, value = p })
+--       end
+--       select_item(items, 'Select Port to Attach', perform_attach)
+--     end
+--   end
+-- end
 
 local function configure_options(base_fqbn, options, idx, acc, callback)
   if idx > #options then
@@ -829,7 +830,9 @@ end
 function M.core_manager_fallback()
   util.notify('Loading core data...', vim.log.levels.INFO)
   fetch_core_data(function(cores)
-    if not cores then return end
+    if not cores then
+      return
+    end
 
     local filtered = {}
     for _, c in ipairs(cores) do
@@ -853,7 +856,9 @@ function M.core_manager_fallback()
 
     vim.ui.select(filtered, {
       prompt = 'Select Arduino Core:',
-      format_item = function(item) return item.label end
+      format_item = function(item)
+        return item.label
+      end,
     }, function(choice)
       if not choice or not choice.value then
         util.notify('Core selection cancelled.', vim.log.levels.INFO)
@@ -1203,7 +1208,9 @@ end
 function M.library_manager_fallback()
   util.notify('Loading library data...', vim.log.levels.INFO)
   fetch_library_data(function(libraries)
-    if not libraries then return end
+    if not libraries then
+      return
+    end
 
     -- Prepare the full, unfiltered results list
     local filtered = {}
@@ -1229,7 +1236,9 @@ function M.library_manager_fallback()
     local function open_results_window(filtered_items)
       vim.ui.select(filtered_items, {
         prompt = 'Select Arduino Library:',
-        format_item = function(item) return item.label end
+        format_item = function(item)
+          return item.label
+        end,
       }, function(choice)
         -- On CANCEL, do nothing, just close
         if not choice or not choice.value then
@@ -1259,7 +1268,6 @@ function M.library_manager_fallback()
     open_results_window(filtered)
   end)
 end
-
 
 local orig_library_manager = M.library_manager
 function M.library_manager()
