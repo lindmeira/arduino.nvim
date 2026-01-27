@@ -289,4 +289,66 @@ function M.get_memory_usage_info()
   return nil
 end
 
+-- UI Helper
+function M.select_item(items, prompt, callback)
+  -- items: list of {label=..., value=...}
+  local telescope_avail = false
+  if config.options.use_telescope then
+    local ok, _ = pcall(require, 'telescope')
+    telescope_avail = ok
+  end
+
+  if telescope_avail then
+    local pickers = require 'telescope.pickers'
+    local finders = require 'telescope.finders'
+    local conf = require('telescope.config').values
+    local actions = require 'telescope.actions'
+    local action_state = require 'telescope.actions.state'
+
+    pickers
+      .new({}, {
+        prompt_title = prompt,
+        finder = finders.new_table {
+          results = items,
+          entry_maker = function(entry)
+            return {
+              value = entry.value,
+              display = entry.label,
+              ordinal = entry.label,
+            }
+          end,
+        },
+        sorter = conf.generic_sorter {},
+        attach_mappings = function(prompt_bufnr, map)
+          actions.select_default:replace(function()
+            actions.close(prompt_bufnr)
+            local selection = action_state.get_selected_entry()
+            if selection then
+              callback(selection.value)
+            end
+          end)
+          return true
+        end,
+      })
+      :find()
+    return
+  end
+
+  -- Fallback to vim.ui.select
+  local on_choice = function(item)
+    if item then
+      callback(item.value)
+    end
+  end
+
+  vim.ui.select(items, {
+    prompt = prompt,
+    format_item = function(item)
+      return item.label
+    end,
+  }, function(choice)
+    on_choice(choice)
+  end)
+end
+
 return M

@@ -121,75 +121,13 @@ function M.setup(opts)
   end
 end
 
--- UI Helper
-local function select_item(items, prompt, callback)
-  -- items: list of {label=..., value=...}
-  local telescope_avail = false
-  if config.options.use_telescope then
-    local ok, _ = pcall(require, 'telescope')
-    telescope_avail = ok
-  end
-
-  if telescope_avail then
-    local pickers = require 'telescope.pickers'
-    local finders = require 'telescope.finders'
-    local conf = require('telescope.config').values
-    local actions = require 'telescope.actions'
-    local action_state = require 'telescope.actions.state'
-
-    pickers
-      .new({}, {
-        prompt_title = prompt,
-        finder = finders.new_table {
-          results = items,
-          entry_maker = function(entry)
-            return {
-              value = entry.value,
-              display = entry.label,
-              ordinal = entry.label,
-            }
-          end,
-        },
-        sorter = conf.generic_sorter {},
-        attach_mappings = function(prompt_bufnr, map)
-          actions.select_default:replace(function()
-            actions.close(prompt_bufnr)
-            local selection = action_state.get_selected_entry()
-            if selection then
-              callback(selection.value)
-            end
-          end)
-          return true
-        end,
-      })
-      :find()
-    return
-  end
-
-  -- Fallback to vim.ui.select
-  local on_choice = function(item)
-    if item then
-      callback(item.value)
-    end
-  end
-
-  vim.ui.select(items, {
-    prompt = prompt,
-    format_item = function(item)
-      return item.label
-    end,
-  }, function(choice)
-    on_choice(choice)
-  end)
-end
-
 -- TO BE REMOVED
 -- function M.attach(port)
 --   local function perform_attach(p)
 --     local cmd = { 'arduino-cli', 'board', 'attach', '-p', p }
 --     -- This command needs to run in the background, not terminal
 --     vim.fn.jobstart(cmd, {
---       on_exit = function(id, code, _)
+--       on_exit = function(id, code, _) 
 --         if code == 0 then
 --           vim.g.arduino_serial_port = p
 --           -- Update sketch config
@@ -232,7 +170,7 @@ end
 --       for _, p in ipairs(ports) do
 --         table.insert(items, { label = p, value = p })
 --       end
---       select_item(items, 'Select Port to Attach', perform_attach)
+--       util.select_item(items, 'Select Port to Attach', perform_attach)
 --     end
 --   end
 -- end
@@ -257,7 +195,7 @@ local function configure_options(base_fqbn, options, idx, acc, callback)
     })
   end
 
-  select_item(items, 'Select ' .. (opt.option_label or opt.option), function(choice)
+  util.select_item(items, 'Select ' .. (opt.option_label or opt.option), function(choice)
     table.insert(acc, opt.option .. '=' .. choice)
     configure_options(base_fqbn, options, idx + 1, acc, callback)
   end)
@@ -265,7 +203,7 @@ end
 
 function M.choose_board()
   local b_list = boards.get_boards()
-  select_item(b_list, 'Select Board', function(value)
+  util.select_item(b_list, 'Select Board', function(value)
     local details = cli.get_board_details(value)
     if details and details.config_options and #details.config_options > 0 then
       configure_options(value, details.config_options, 1, {}, function(final_fqbn)
@@ -283,7 +221,7 @@ end
 
 function M.choose_programmer()
   local p_list = boards.get_programmers()
-  select_item(p_list, 'Select Programmer', function(value)
+  util.select_item(p_list, 'Select Programmer', function(value)
     config.options.programmer = value
     local display_val = (value == nil or value == '') and 'None' or value
     util.notify('Selected programmer: ' .. display_val)
@@ -306,7 +244,7 @@ function M.choose_port()
     end
   end
 
-  select_item(items, 'Select Port', function(value)
+  util.select_item(items, 'Select Port', function(value)
     if value == '__AUTO_PORT__' then
       -- Remove locked port from config
       vim.g.arduino_serial_port = nil
@@ -483,7 +421,7 @@ function M.set_baud(baud, is_auto)
     for _, r in ipairs(rates) do
       table.insert(items, { label = tostring(r), value = r })
     end
-    select_item(items, 'Select Baud Rate', M.set_baud)
+    util.select_item(items, 'Select Baud Rate', M.set_baud)
     return
   end
 
@@ -1291,6 +1229,10 @@ function M.library_manager()
   else
     return M.library_manager_fallback()
   end
+end
+
+function M.run_simulation()
+  require('arduino.sim').run()
 end
 
 return M
