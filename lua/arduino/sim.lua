@@ -51,7 +51,7 @@ local function get_config_path()
   if not build_path then
     return nil
   end
-  return build_path .. '/simulation.yaml'
+  return build_path .. '/simulation.json'
 end
 
 local function read_simulation_config()
@@ -65,16 +65,14 @@ local function read_simulation_config()
     return nil
   end
 
-  local data = {}
-  for line in f:lines() do
-    local k, v = line:match '^%s*(%w+):%s*(.+)$'
-    if k and v then
-      data[k] = v
-    end
-  end
+  local content = f:read '*a'
   f:close()
 
-  return data
+  local ok, data = pcall(vim.json.decode, content)
+  if ok then
+    return data
+  end
+  return nil
 end
 
 local function save_simulation_config(mcu, freq, fqbn, simulator)
@@ -97,18 +95,7 @@ local function save_simulation_config(mcu, freq, fqbn, simulator)
 
   local f = io.open(path, 'w')
   if f then
-    if data.mcu then
-      f:write('mcu: ' .. data.mcu .. '\n')
-    end
-    if data.freq then
-      f:write('freq: ' .. data.freq .. '\n')
-    end
-    if data.fqbn then
-      f:write('fqbn: ' .. data.fqbn .. '\n')
-    end
-    if data.simulator then
-      f:write('simulator: ' .. data.simulator .. '\n')
-    end
+    f:write(vim.json.encode(data))
     f:close()
   end
 end
