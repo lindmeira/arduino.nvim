@@ -91,7 +91,15 @@ This will make the fallback lists use tick (✓) and up-arrow (↑) ASCII symbol
      - `:ArduinoSetBaud` — Set baud rate (interactive)
      - `:ArduinoGetInfo` — Show config info
      - `:ArduinoCheckLogs` — Show log buffer
+     - `:ArduinoRunSimulation` — Run simulation (SimAVR)
+     - `:ArduinoSelectSimulator` — Choose simulator
+     - `:ArduinoResetSimulation` — Reset simulation config
   4. Check statusline/messages/logs for results.
+
+#### Simulation & Smart Compilation
+- **Simulation**: Uses `simavr` (must be in PATH). Config is saved to `build/simulation.json`.
+- **Smart Compilation**: `:ArduinoUpload` and `:ArduinoRunSimulation` check `build/build_receipt.json` and file timestamps. If the binary is up-to-date and the FQBN matches, compilation is skipped.
+- **Safety**: All build/upload/sim commands prompt to save if the buffer is modified.
 
 #### Statusline
 - Automatic Lualine integration: Arduino status will appear in `lualine_x` for Arduino files; manual integration available via `require('arduino.status').string()`.

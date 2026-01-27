@@ -13,6 +13,7 @@
 - **Serial Monitor**: Integrated terminal-based serial monitor with support for multiple backends (`arduino-cli`, `screen`, `minicom`, `picocom`) and auto-baud detection from sketch code.
 - **Library & Core Management**: Full-featured managers for installing, updating, and removing Arduino libraries and cores.
 - **Log Management**: dedicated log buffer with ANSI color support and memory usage reporting after compilation/upload.
+- **Hardware Simulation**: Integrated support for `simavr` with automatic MCU/frequency detection and smart recompilation.
 
 ## Architecture & Codebase Structure
 The plugin source is located in `lua/arduino/`.
@@ -22,6 +23,7 @@ The plugin source is located in `lua/arduino/`.
 - **`util.lua`**: Critical utility functions for `sketch.yaml` I/O, LSP restarts, baud rate detection, and notifications.
 - **`boards.lua`**: Handles fetching and parsing board and programmer lists from the CLI.
 - **`core.lua` & `lib.lua`**: Logic for managing Arduino cores and libraries respectively.
+- **`sim.lua`**: Logic for hardware simulation, including simulator selection, config persistence, and smart recompilation.
 - **`term.lua`**: Execution logic for running CLI commands (silent jobs or terminal buffers).
 - **`status.lua`**: Logic for generating the statusline string.
 - **`log.lua`**: Internal logging system for capturing and displaying command output.
@@ -54,6 +56,9 @@ require('arduino').setup({
 | `:ArduinoUpload` | Compile and upload the sketch. |
 | `:ArduinoMonitor` | Open the serial monitor in a floating window. |
 | `:ArduinoUploadAndMonitor` | Upload then immediately open the serial monitor. |
+| `:ArduinoRunSimulation` | Run the current sketch in a hardware simulator (e.g. SimAVR). |
+| `:ArduinoSelectSimulator` | Choose which simulator to use. |
+| `:ArduinoResetSimulation` | Reset stored simulation configuration. |
 | `:ArduinoLibraryManager` | Manage Arduino libraries (Telescope-powered). |
 | `:ArduinoCoreManager` | Manage Arduino board cores. |
 | `:ArduinoCheckLogs` | View the command execution logs (with memory usage info). |
