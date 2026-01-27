@@ -32,7 +32,10 @@ return {
     -- Hidden shortcuts
     { '<leader>av', '<cmd>ArduinoVerify<cr>', desc = 'which_key_ignore' },
     -- Grouped shortcuts
-    { '<leader>amc', '<cmd>ArduinoCoreManager<cr>', desc = 'Core Manager' },
-    { '<leader>aml', '<cmd>ArduinoLibraryManager<cr>', desc = 'Library Manager' },
+    { '<leader>anc', '<cmd>ArduinoCoreManager<cr>', desc = 'Core Manager' },
+    { '<leader>anl', '<cmd>ArduinoLibraryManager<cr>', desc = 'Library Manager' },
+    { '<leader>anr', '<cmd>ArduinoResetSimulation<cr>', desc = 'Reset Simulation' },
+    { '<leader>ans', '<cmd>ArduinoSelectSimulator<cr>', desc = 'Select Simulator' },
+    { '<leader>anx', '<cmd>ArduinoRunSimulation<cr>', desc = 'Run Simulation' },
   },
 }
