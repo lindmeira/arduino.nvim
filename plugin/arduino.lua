@@ -67,3 +67,11 @@ end, { nargs = '?' })
 vim.api.nvim_create_user_command('ArduinoRunSimulation', function()
   arduino.run_simulation()
 end, {})
+
+vim.api.nvim_create_user_command('ArduinoSelectSimulator', function()
+  arduino.select_simulator()
+end, {})
+
+vim.api.nvim_create_user_command('ArduinoResetSimulation', function()
+  arduino.reset_simulation()
+end, {})

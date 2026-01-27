@@ -127,7 +127,7 @@ end
 --     local cmd = { 'arduino-cli', 'board', 'attach', '-p', p }
 --     -- This command needs to run in the background, not terminal
 --     vim.fn.jobstart(cmd, {
---       on_exit = function(id, code, _) 
+--       on_exit = function(id, code, _)
 --         if code == 0 then
 --           vim.g.arduino_serial_port = p
 --           -- Update sketch config
@@ -232,7 +232,7 @@ end
 function M.choose_port()
   local ports = cli.get_ports(true)
   local items = {
-    { label = 'Auto (detect from system)', value = '__AUTO_PORT__' }
+    { label = 'Auto (detect from system)', value = '__AUTO_PORT__' },
   }
 
   if #ports == 0 then
@@ -1233,6 +1233,14 @@ end
 
 function M.run_simulation()
   require('arduino.sim').run()
+end
+
+function M.select_simulator()
+  require('arduino.sim').select_simulator()
+end
+
+function M.reset_simulation()
+  require('arduino.sim').reset_simulation()
 end
 
 return M
