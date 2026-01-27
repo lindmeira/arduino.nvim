@@ -21,6 +21,31 @@ local FQBN_MAP = {
   ['arduino:avr:yun'] = { mcu = 'atmega32u4', freq = 16000000 },
 }
 
+local FQBN_PATTERNS = {
+  -- lgt8fx
+  { pattern = 'lgt8fx:avr:328:clock_source=internal,clock_div=1', mcu = 'atmega328p', freq = '32000000' },
+  { pattern = 'lgt8fx:avr:328:clock_source=internal,clock_div=2', mcu = 'atmega328p', freq = '16000000' },
+  { pattern = 'lgt8fx:avr:328:clock_source=internal,clock_div=4', mcu = 'atmega328p', freq = '8000000' },
+  { pattern = 'lgt8fx:avr:328:clock_source=internal,clock_div=8', mcu = 'atmega328p', freq = '4000000' },
+  { pattern = 'lgt8fx:avr:328:clock_source=external,clock_div=16', mcu = 'atmega328p', freq = '2000000' },
+  { pattern = 'lgt8fx:avr:328:clock_source=external,clock_div=32', mcu = 'atmega328p', freq = '1000000' },
+  -- tiny13
+  { pattern = 'MicroCore:avr:13:.*,clock=9M6', mcu = 'attiny13', freq = '9600000' },
+  { pattern = 'MicroCore:avr:13:.*,clock=4M8', mcu = 'attiny13', freq = '4800000' },
+  { pattern = 'MicroCore:avr:13:.*,clock=2M4', mcu = 'attiny13', freq = '2400000' },
+  { pattern = 'MicroCore:avr:13:.*,clock=1M2', mcu = 'attiny13', freq = '1200000' },
+  -- tinyX5
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=85,clock=8internal', mcu = 'attiny85', freq = '8000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=85,clock=4internal', mcu = 'attiny85', freq = '4000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=85,clock=1internal', mcu = 'attiny85', freq = '1000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=45,clock=8internal', mcu = 'attiny45', freq = '8000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=45,clock=4internal', mcu = 'attiny45', freq = '4000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=45,clock=1internal', mcu = 'attiny45', freq = '1000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=25,clock=8internal', mcu = 'attiny25', freq = '8000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=25,clock=4internal', mcu = 'attiny25', freq = '4000000' },
+  { pattern = 'ATTinyCore:avr:attinyx5:chip=25,clock=1internal', mcu = 'attiny25', freq = '1000000' },
+}
+
 local function get_config_path()
   local build_path = cli.get_build_path()
   if not build_path then
@@ -249,6 +274,16 @@ local function setup_simavr(simulator_name)
 
   -- Guessing Logic
   local guess = FQBN_MAP[base_fqbn]
+
+  if not guess then
+    -- Try pattern matching against the full FQBN (including options)
+    for _, item in ipairs(FQBN_PATTERNS) do
+      if fqbn:match(item.pattern) then
+        guess = item
+        break
+      end
+    end
+  end
 
   if guess then
     save_simulation_config(guess.mcu, guess.freq, base_fqbn, simulator_name)
