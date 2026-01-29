@@ -12,6 +12,7 @@ return {
       -- serial_cmd = 'screen', -- 'arduino-cli' (default), 'screen', 'minicom' or 'picocom'
       -- manager_emoji = false, -- Defaults to true
       -- use_telescope = false, -- Defaults to true if available
+      -- fullscreen_debug = true, -- Defaults to false
       -- build_path = '{project_dir}/build',
       -- floating_window = { -- Configure floating windows style (logs, monitor)
       --   style = 'telescope', -- 'telescope' (default) or 'lualine'

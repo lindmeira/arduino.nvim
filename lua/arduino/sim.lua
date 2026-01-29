@@ -176,10 +176,9 @@ local function open_avr_gdb(elf_path, port, fullscreen)
   -- Wait a bit for simavr to initialize the GDB stub
   vim.wait(500)
 
-  -- Create a terminal buffer
   local buf = vim.api.nvim_create_buf(false, true)
   local width, height, row, col
-  if fullscreen or config.options.sim_debug_window == 'full' then
+  if fullscreen or config.options.fullscreen_debug then
     width = vim.o.columns
     height = vim.o.lines
     row = 0

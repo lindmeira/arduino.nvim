@@ -29,8 +29,8 @@ M.VALID_BAUD_RATES = {
   -- Flags used when compiling for simulation (debug symbols, lower opt, disable LTO)
   simulation_build_args = "--build-property compiler.c.extra_flags=-g --build-property compiler.cpp.extra_flags=-g --build-property build.extra_flags='-Og -fno-lto'",
   -- Simulation debug UI options
-  sim_debug_window = 'floating', -- 'floating' or 'full'
-  sim_debug_gdb = 'avr-gdb',
+  fullscreen_debug = false,
+  sim_debug_gdb = nil, -- If nil, will auto-resolve
   sim_debug_kill_sim_on_gdb_exit = true,
   serial_cmd = 'arduino-cli',
   build_path = '{project_dir}/build',
