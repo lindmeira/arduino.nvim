@@ -221,7 +221,7 @@ local function open_avr_gdb(elf_path, port, fullscreen)
   return { buf = buf, win = win, job_id = job_id }
 end
 
-local function ensure_elf_and_run(mcu, freq, force_compile)
+local function ensure_elf_and_run(mcu, freq)
   local build_path = cli.get_build_path()
   if not build_path then
     util.notify('Build path not configured.', vim.log.levels.ERROR)
@@ -237,7 +237,7 @@ local function ensure_elf_and_run(mcu, freq, force_compile)
   end
 
   local elf_file = find_elf()
-  local needs_compile = force_compile
+  local needs_compile = false
 
   if not needs_compile then
     if not elf_file or vim.fn.filereadable(elf_file) == 0 then
@@ -266,7 +266,7 @@ local function ensure_elf_and_run(mcu, freq, force_compile)
   end
 
   if needs_compile then
-    util.notify('Compiling sketch for simulation...', vim.log.levels.INFO)
+    util.notify('Compiling sketch...', vim.log.levels.INFO)
     -- Use standard compile command (release mode / no debug flags forced)
     -- This matches the agnostic behavior requested
     local cmd = cli.get_compile_command(nil)
@@ -452,7 +452,6 @@ local function setup_simavr(simulator_name)
 
   local existing_config = read_simulation_config()
   local mcu, freq
-  local force_compile = false
 
   -- Check if existing config matches current FQBN exactly
   if existing_config and existing_config.fqbn == fqbn and existing_config.mcu and existing_config.freq then
@@ -463,8 +462,7 @@ local function setup_simavr(simulator_name)
       save_simulation_config(mcu, freq, fqbn, simulator_name)
     end
   else
-    -- Config mismatch or missing: re-evaluate and force compile
-    force_compile = true
+    -- Config mismatch or missing: re-evaluate
     local guess = FQBN_MAP[base_fqbn]
 
     if not guess then
@@ -483,13 +481,13 @@ local function setup_simavr(simulator_name)
     else
       select_mcu_and_freq(function(selected_mcu, selected_freq)
         save_simulation_config(selected_mcu, selected_freq, fqbn, simulator_name)
-        ensure_elf_and_run(selected_mcu, selected_freq, true)
+        ensure_elf_and_run(selected_mcu, selected_freq)
       end)
       return
     end
   end
 
-  ensure_elf_and_run(mcu, freq, force_compile)
+  ensure_elf_and_run(mcu, freq)
 end
 
 local function run_with_simulator(sim_val)
