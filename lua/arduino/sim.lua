@@ -217,6 +217,12 @@ local function open_avr_gdb(elf_path, port, fullscreen)
     end,
   })
 
+  -- Keymaps for closing
+  local opts = { buffer = buf, silent = true }
+  vim.keymap.set('t', '<Esc>', '<C-\\><C-n><cmd>close<cr>', opts)
+  vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
+  vim.keymap.set('n', '<Esc>', '<cmd>close<cr>', opts)
+
   vim.cmd 'startinsert'
   return { buf = buf, win = win, job_id = job_id }
 end
@@ -379,7 +385,7 @@ function M.simulate_and_debug()
     end
 
     if config.options.sim_debug_kill_sim_on_gdb_exit then
-      vim.api.nvim_create_autocmd('BufUnload', {
+      vim.api.nvim_create_autocmd({ 'BufUnload', 'WinClosed' }, {
         buffer = session.buf,
         once = true,
         callback = function()
