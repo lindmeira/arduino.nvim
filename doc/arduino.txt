@@ -148,7 +148,7 @@ COMMANDS                                                       *arduino-commands
    Compile and upload your project, then open the serial monitor.
 
                                                            *:ArduinoRunSimulation*
-:ArduinoRunSimulation
+:ArduinoSimulateAndMonitor
    Run the project in a hardware simulator. See |arduino-simulation|.
 
                                                         *:ArduinoSelectSimulator*

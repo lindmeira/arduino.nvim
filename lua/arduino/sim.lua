@@ -66,7 +66,7 @@ local function save_simulation_config(mcu, freq, fqbn, simulator)
 end
 
 local function launch_simavr(mcu, freq, elf_path)
-  local cmd = string.format('simavr --gdb --mcu %s --freq %s "%s"', mcu, freq, elf_path)
+  local cmd = string.format('simavr --mcu %s --freq %s "%s"', mcu, freq, elf_path)
 
   -- Reuse terminal window logic (similar to init.lua serial)
   local buf = vim.api.nvim_create_buf(false, true)
@@ -119,6 +119,109 @@ local function launch_simavr(mcu, freq, elf_path)
   vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
 end
 
+-- Start simavr in background with gdb stub enabled on port 1234.
+local function launch_simavr_debug(mcu, freq, elf_path)
+  -- simavr typically listens on port 1234 when -g is passed
+  local port = 1234
+
+  local cmd = string.format('simavr --gdb --mcu %s --freq %s "%s"', mcu, freq, elf_path)
+
+  -- Run in background job (not terminal) so we can open a separate gdb terminal
+  local job_id = vim.fn.jobstart(cmd, {
+    on_stdout = function(_, data)
+      if data and #data > 0 then
+        -- Could store logs if desired
+      end
+    end,
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        -- Log errors
+      end
+    end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        util.notify('Simulation exited with code ' .. code, vim.log.levels.WARN)
+      end
+    end,
+  })
+
+  return { job_id = job_id, port = port }
+end
+
+local function resolve_avr_gdb()
+  -- Check for user override first
+  if config.options.sim_debug_gdb then
+    return config.options.sim_debug_gdb
+  end
+
+  -- Check arduino-cli managed tools
+  local cli_path = cli.get_tool_path 'avr-gdb'
+  if cli_path then
+    return cli_path
+  end
+
+  -- Fallback to system path
+  return 'avr-gdb'
+end
+
+local function open_avr_gdb(elf_path, port, fullscreen)
+  local gdb = resolve_avr_gdb()
+  if vim.fn.executable(gdb) == 0 then
+    util.notify(gdb .. ' not found.', vim.log.levels.ERROR)
+    return nil
+  end
+
+  local cmd = string.format('%s -q "%s" -ex "target remote localhost:%d"', gdb, elf_path, port)
+
+  -- Wait a bit for simavr to initialize the GDB stub
+  vim.wait(500)
+
+  -- Create a terminal buffer
+  local buf = vim.api.nvim_create_buf(false, true)
+  local width, height, row, col
+  if fullscreen or config.options.sim_debug_window == 'full' then
+    width = vim.o.columns
+    height = vim.o.lines
+    row = 0
+    col = 0
+  else
+    width = math.ceil(vim.o.columns * 0.8)
+    height = math.ceil(vim.o.lines * 0.8)
+    row = math.floor((vim.o.lines - height) / 2) - 1
+    col = math.ceil((vim.o.columns - width) / 2)
+  end
+
+  local win_opts = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' AVR-GDB ',
+    title_pos = 'center',
+  }
+
+  local win = vim.api.nvim_open_win(buf, true, win_opts)
+  vim.api.nvim_set_option_value('winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle', { win = win })
+
+  local job_id = vim.fn.termopen(cmd)
+
+  -- Ensure process is killed when buffer/window is closed
+  vim.api.nvim_create_autocmd({ 'BufUnload', 'WinClosed' }, {
+    buffer = buf,
+    callback = function()
+      if job_id then
+        pcall(vim.fn.jobstop, job_id)
+      end
+    end,
+  })
+
+  vim.cmd 'startinsert'
+  return { buf = buf, win = win, job_id = job_id }
+end
+
 local function ensure_elf_and_run(mcu, freq, force_compile)
   local build_path = cli.get_build_path()
   if not build_path then
@@ -168,11 +271,6 @@ local function ensure_elf_and_run(mcu, freq, force_compile)
     local debug_args = config.options.simulation_build_args
     local cmd = cli.get_compile_command(debug_args)
     term.run_silent(cmd, 'Compilation', function()
-      -- We need to save the receipt here to keep it in sync with uploads
-      -- Accessing internal function from another module is tricky without export
-      -- We'll just call the same logic or if possible require init (careful of circular deps)
-      -- Simplest: Re-implement saving receipt logic here or export it in init.lua
-      -- Let's try to do it properly by duplicating minimal logic to avoid circular dependency
       -- Save receipt marking this as a debug build
       local build_receipt = require 'arduino.build_receipt'
       build_receipt.write(nil, 'debug')
@@ -181,6 +279,129 @@ local function ensure_elf_and_run(mcu, freq, force_compile)
     end)
   else
     run()
+  end
+end
+
+local function check_save()
+  if vim.bo.modified then
+    local choice = vim.fn.confirm('Buffer has unsaved changes. Save?', '&Yes\n&No\n&Cancel')
+    if choice == 1 then
+      vim.cmd 'write'
+    elseif choice == 3 then
+      return false -- Cancel
+    end
+  end
+  return true
+end
+
+function M.simulate_and_debug()
+  if not check_save() then
+    return
+  end
+
+  local conf = read_simulation_config()
+  local sim = conf and conf.simulator
+  if not sim then
+    util.select_item(SIMULATORS, 'Select Simulator', function(sim_val)
+      if sim_val == 'simavr' then
+        setup_simavr(sim_val)
+      end
+    end)
+    conf = read_simulation_config()
+  end
+
+  -- Ensure compiled ELF with debug symbols
+  local fqbn = config.options.board
+  local base_fqbn = fqbn:match '^([^:]+:[^:]+:[^:]+)' or fqbn
+
+  local guess = FQBN_MAP[base_fqbn]
+  local mcu, freq
+  if conf and conf.mcu and conf.freq then
+    mcu = conf.mcu
+    freq = conf.freq
+  elseif guess then
+    mcu = guess.mcu
+    freq = guess.freq
+  else
+    util.notify('MCU/frequency unknown; run ArduinoSimulateAndMonitor first to configure.', vim.log.levels.ERROR)
+    return
+  end
+
+  -- Ensure ELF is compiled with debug flags
+  local build_path = cli.get_build_path()
+  if not build_path then
+    util.notify('Build path not configured.', vim.log.levels.ERROR)
+    return
+  end
+
+  local function find_elf()
+    local elf_files = vim.fn.glob(build_path .. '/*.elf', true, true)
+    if #elf_files > 0 then
+      return elf_files[1]
+    end
+    return nil
+  end
+
+  local elf_file = find_elf()
+  local needs_compile = false
+  if not elf_file or vim.fn.filereadable(elf_file) == 0 then
+    needs_compile = true
+  else
+    local sketch_path = vim.fn.expand '%:p'
+    local sketch_time = vim.fn.getftime(sketch_path)
+    local elf_time = vim.fn.getftime(elf_file)
+    if sketch_time > elf_time then
+      needs_compile = true
+    elseif not build_receipt.matches 'debug' then
+      needs_compile = true
+    end
+  end
+
+  local function start_debug_session()
+    local final_elf = find_elf()
+    if not final_elf then
+      util.notify('ELF not found.', vim.log.levels.ERROR)
+      return
+    end
+
+    local siminfo = launch_simavr_debug(mcu, freq, final_elf)
+    if not siminfo or not siminfo.job_id then
+      util.notify('Failed to start simavr for debugging.', vim.log.levels.ERROR)
+      return
+    end
+
+    local session = open_avr_gdb(final_elf, siminfo.port, false)
+    if not session then
+      if config.options.sim_debug_kill_sim_on_gdb_exit and siminfo and siminfo.job_id then
+        pcall(vim.fn.jobstop, siminfo.job_id)
+      end
+      return
+    end
+
+    if config.options.sim_debug_kill_sim_on_gdb_exit then
+      vim.api.nvim_create_autocmd('BufUnload', {
+        buffer = session.buf,
+        once = true,
+        callback = function()
+          if siminfo and siminfo.job_id then
+            pcall(vim.fn.jobstop, siminfo.job_id)
+          end
+        end,
+      })
+    end
+  end
+
+  if needs_compile then
+    util.notify('Compiling sketch (debug flags)...', vim.log.levels.INFO)
+    local debug_args = config.options.simulation_build_args
+    local cmd = cli.get_compile_command(debug_args)
+    term.run_silent(cmd, 'Compilation', function()
+      local br = require 'arduino.build_receipt'
+      br.write(nil, 'debug')
+      start_debug_session()
+    end)
+  else
+    start_debug_session()
   end
 end
 
@@ -281,18 +502,6 @@ local function run_with_simulator(sim_val)
   else
     util.notify('Simulator not implemented yet.', vim.log.levels.WARN)
   end
-end
-
-local function check_save()
-  if vim.bo.modified then
-    local choice = vim.fn.confirm('Buffer has unsaved changes. Save?', '&Yes\n&No\n&Cancel')
-    if choice == 1 then
-      vim.cmd 'write'
-    elseif choice == 3 then
-      return false -- Cancel
-    end
-  end
-  return true
 end
 
 function M.run()

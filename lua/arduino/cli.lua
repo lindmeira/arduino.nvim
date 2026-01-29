@@ -177,9 +177,9 @@ end
 function M.get_board_details(fqbn)
   -- Strip existing options from FQBN if present to get base details
   local base_fqbn = fqbn:match '^([^:]+:[^:]+:[^:]+)' or fqbn
-
   local cmd = 'arduino-cli board details -b ' .. base_fqbn .. ' --format json'
   local handle = io.popen(cmd)
+
   if handle then
     local result = handle:read '*a'
     handle:close()
@@ -188,6 +188,69 @@ function M.get_board_details(fqbn)
       return data
     end
   end
+  return nil
+end
+
+function M.get_tool_path(tool_name)
+  local sketch_cpu = util.get_sketch_config()
+  local board = (sketch_cpu and sketch_cpu.fqbn) or config.options.board
+  if not board then
+    return nil
+  end
+
+  local cmd = 'arduino-cli compile --show-properties -b ' .. board
+  local handle = io.popen(cmd)
+  if not handle then
+    return nil
+  end
+
+  local result = handle:read '*a'
+
+  handle:close()
+
+  -- Search for runtime.tools.<tool_name>.path or similar
+  -- Usually it's something like runtime.tools.avr-gcc.path
+  -- For gdb, it's often in the same directory as gcc or explicitly listed.
+  -- Let's look for compiler.path first
+  local patterns = {
+    'runtime.tools.' .. tool_name .. '.path=(.*)',
+    'compiler.path=(.*)',
+  }
+
+  local base_path = nil
+
+  for line in result:gmatch '[^\r\n]+' do
+    for _, pattern in ipairs(patterns) do
+      local match = line:match(pattern)
+
+      if match then
+        base_path = match
+        break
+      end
+    end
+
+    if base_path then
+      break
+    end
+  end
+
+  if base_path then
+    local full_path = base_path .. '/' .. tool_name
+
+    if vim.fn.executable(full_path) == 1 then
+      return full_path
+    end
+
+    -- Try with .exe if on windows (though plugin is linux optimized)
+    if vim.fn.has 'win32' == 1 then
+      full_path = full_path .. '.exe'
+
+      if vim.fn.executable(full_path) == 1 then
+        return full_path
+      end
+    end
+  end
+
   return nil
 end
 

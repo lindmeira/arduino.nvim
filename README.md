@@ -73,7 +73,7 @@ This plugin is designed to work hand-in-hand with `arduino-cli`, and it uses `sk
 | `ArduinoUpload` | | Compile and upload the sketch. |
 | `ArduinoMonitor` | | Open a serial monitor buffer. |
 | `ArduinoUploadAndMonitor` | | Upload and then open serial monitor. |
-| `ArduinoRunSimulation` | | Launch a hardware simulator (e.g. SimAVR). |
+| `ArduinoSimulateAndMonitor` | | Launch a hardware simulator (e.g. SimAVR). |
 | `ArduinoSelectSimulator` | | Choose which simulator to use. |
 | `ArduinoResetSimulation` | | Reset simulation parameters (MCU, frequency). |
 | `ArduinoLibraryManager` | | Manage libraries (install/update/remove). |

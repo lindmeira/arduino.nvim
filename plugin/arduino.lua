@@ -64,8 +64,12 @@ vim.api.nvim_create_user_command('ArduinoSetBaud', function(opts)
   arduino.set_baud(opts.args ~= '' and opts.args or nil)
 end, { nargs = '?' })
 
-vim.api.nvim_create_user_command('ArduinoRunSimulation', function()
-  arduino.run_simulation()
+vim.api.nvim_create_user_command('ArduinoSimulateAndMonitor', function()
+  arduino.simulate_and_monitor()
+end, {})
+
+vim.api.nvim_create_user_command('ArduinoSimulateAndDebug', function()
+  arduino.simulate_and_debug()
 end, {})
 
 vim.api.nvim_create_user_command('ArduinoSelectSimulator', function()

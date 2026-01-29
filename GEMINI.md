@@ -56,7 +56,7 @@ require('arduino').setup({
 | `:ArduinoUpload` | Compile and upload the sketch. |
 | `:ArduinoMonitor` | Open the serial monitor in a floating window. |
 | `:ArduinoUploadAndMonitor` | Upload then immediately open the serial monitor. |
-| `:ArduinoRunSimulation` | Run the current sketch in a hardware simulator (e.g. SimAVR). |
+| `:ArduinoSimulateAndMonitor` | Run the current sketch in a hardware simulator (e.g. SimAVR). |
 | `:ArduinoSelectSimulator` | Choose which simulator to use. |
 | `:ArduinoResetSimulation` | Reset stored simulation configuration. |
 | `:ArduinoLibraryManager` | Manage Arduino libraries (Telescope-powered). |

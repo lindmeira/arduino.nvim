@@ -91,7 +91,7 @@ This will make the fallback lists use tick (✓) and up-arrow (↑) ASCII symbol
      - `:ArduinoSetBaud` — Set baud rate (interactive)
      - `:ArduinoGetInfo` — Show config info
      - `:ArduinoCheckLogs` — Show log buffer
-     - `:ArduinoRunSimulation` — Run simulation (SimAVR)
+    - `:ArduinoSimulateAndMonitor` — Run simulation (SimAVR)
      - `:ArduinoSelectSimulator` — Choose simulator
      - `:ArduinoResetSimulation` — Reset simulation config
   4. Check statusline/messages/logs for results.

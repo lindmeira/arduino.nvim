@@ -1300,6 +1300,15 @@ function M.run_simulation()
   require('arduino.sim').run()
 end
 
+-- Keep run_simulation as internal API, expose simulate_and_monitor as the public command
+function M.simulate_and_monitor()
+  require('arduino.sim').run()
+end
+
+function M.simulate_and_debug()
+  require('arduino.sim').simulate_and_debug()
+end
+
 function M.select_simulator()
   require('arduino.sim').select_simulator()
 end
