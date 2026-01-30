@@ -11,9 +11,9 @@
 - **Enhanced UI**: Built-in support for `telescope.nvim` for all selection menus (boards, ports, libraries, cores) with robust `vim.ui.select` fallbacks.
 - **Automatic Statusline**: Injects a status component into `lualine.nvim` automatically, showing the current board, programmer, port, and baud rate.
 - **Serial Monitor**: Integrated terminal-based serial monitor with support for multiple backends (`arduino-cli`, `screen`, `minicom`, `picocom`) and auto-baud detection from sketch code.
-- **Library & Core Management**: Full-featured managers for installing, updating, and removing Arduino libraries and cores.
-- **Log Management**: dedicated log buffer with ANSI color support and memory usage reporting after compilation/upload.
-- **Hardware Simulation**: Integrated support for `simavr` with automatic MCU/frequency detection and smart recompilation.
+- **Library & Core Management**: Full-featured managers for installing, updating, and removing Arduino libraries and cores. Includes support for adding **Third-Party Core URLs**.
+- **Log Management**: Dedicated log buffer with ANSI color support, memory usage reporting, and **real-time output streaming**.
+- **Hardware Simulation & Debugging**: Integrated support for `simavr` with automatic MCU/frequency detection, smart recompilation, and **GDB debugging** support.
 
 ## Architecture & Codebase Structure
 The plugin source is located in `lua/arduino/`.
@@ -22,11 +22,11 @@ The plugin source is located in `lua/arduino/`.
 - **`cli.lua`**: High-level wrappers for constructing `arduino-cli` commands (compile, upload, monitor).
 - **`util.lua`**: Critical utility functions for `sketch.yaml` I/O, LSP restarts, baud rate detection, and notifications.
 - **`boards.lua`**: Handles fetching and parsing board and programmer lists from the CLI.
-- **`core.lua` & `lib.lua`**: Logic for managing Arduino cores and libraries respectively.
-- **`sim.lua`**: Logic for hardware simulation, including simulator selection, config persistence, and smart recompilation.
+- **`core.lua` & `lib.lua`**: Logic for managing Arduino cores and libraries respectively. `core.lua` handles third-party URL addition.
+- **`sim.lua`**: Logic for hardware simulation and debugging, including simulator selection, config persistence, smart recompilation, and GDB session management.
 - **`term.lua`**: Execution logic for running CLI commands (silent jobs or terminal buffers).
 - **`status.lua`**: Logic for generating the statusline string.
-- **`log.lua`**: Internal logging system for capturing and displaying command output.
+- **`log.lua`**: Internal logging system. Implements a publish-subscribe mechanism for broadcasting log updates to the UI in real-time.
 
 ## Development Workflow
 - **No Build Step**: The project is interpreted Lua. Changes take effect upon restarting Neovim or reloading the plugin.
@@ -43,6 +43,8 @@ require('arduino').setup({
     serial_baud = 9600,
     auto_baud = true,
     use_telescope = true,
+    fullscreen_debug = false, -- Open GDB in fullscreen (default: false)
+    sim_debug_gdb = nil,      -- Path to GDB executable (default: auto-detect)
 })
 ```
 
@@ -57,11 +59,13 @@ require('arduino').setup({
 | `:ArduinoMonitor` | Open the serial monitor in a floating window. |
 | `:ArduinoUploadAndMonitor` | Upload then immediately open the serial monitor. |
 | `:ArduinoSimulateAndMonitor` | Run the current sketch in a hardware simulator (e.g. SimAVR). |
+| `:ArduinoSimulateAndDebug` | Compile with debug symbols and launch SimAVR with GDB attached. |
 | `:ArduinoSelectSimulator` | Choose which simulator to use. |
 | `:ArduinoResetSimulation` | Reset stored simulation configuration. |
 | `:ArduinoLibraryManager` | Manage Arduino libraries (Telescope-powered). |
 | `:ArduinoCoreManager` | Manage Arduino board cores. |
-| `:ArduinoCheckLogs` | View the command execution logs (with memory usage info). |
+| `:ArduinoThirdPartyCore` | Add third-party board manager URLs. |
+| `:ArduinoCheckLogs` | View the command execution logs (real-time). |
 | `:ArduinoSetBaud` | Manually set or auto-detect baud rate for the monitor. |
 | `:ArduinoGetInfo` | Print current configuration details. |
 
