@@ -11,11 +11,6 @@ if not config.is_setup then
   arduino.setup()
 end
 
--- TO BE REMOVED
---vim.api.nvim_create_user_command('ArduinoAttach', function(opts)
---  arduino.attach(opts.args ~= '' and opts.args or nil)
---end, { nargs = '?' })
-
 vim.api.nvim_create_user_command('ArduinoSelectBoard', function()
   arduino.choose_board()
 end, {})

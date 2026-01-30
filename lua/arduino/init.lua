@@ -122,60 +122,6 @@ function M.setup(opts)
   end
 end
 
--- TO BE REMOVED
--- function M.attach(port)
---   local function perform_attach(p)
---     local cmd = { 'arduino-cli', 'board', 'attach', '-p', p }
---     -- This command needs to run in the background, not terminal
---     vim.fn.jobstart(cmd, {
---       on_exit = function(id, code, _)
---         if code == 0 then
---           vim.g.arduino_serial_port = p
---           -- Update sketch config
---           util.get_sketch_config(vim.fn.expand '%:p:h') -- Refresh cache/lookup
---
---           -- Try to detect the board from the port we just attached to
---           local handle = io.popen 'arduino-cli board list --format json'
---           if handle then
---             local result = handle:read '*a'
---             handle:close()
---             local ok, data = pcall(vim.json.decode, result)
---             if ok and data then
---               for _, item in ipairs(data) do
---                 if item.port and item.port.address == p and item.matching_boards and #item.matching_boards > 0 then
---                   config.options.board = item.matching_boards[1].fqbn
---                   break
---                 end
---               end
---             end
---           end
---
---           util.notify('Sketch attached to ' .. (config.options.board or 'unknown'))
---         else
---           util.notify('Failed to attach sketch.', vim.log.levels.ERROR)
---         end
---       end,
---     })
---   end
---
---   if port then
---     perform_attach(port)
---   else
---     local ports = cli.get_ports(true)
---     if #ports == 0 then
---       util.notify('No serial ports found.', vim.log.levels.WARN)
---     elseif #ports == 1 then
---       perform_attach(ports[1])
---     else
---       local items = {}
---       for _, p in ipairs(ports) do
---         table.insert(items, { label = p, value = p })
---       end
---       util.select_item(items, 'Select Port to Attach', perform_attach)
---     end
---   end
--- end
-
 local function configure_options(base_fqbn, options, idx, acc, callback)
   if idx > #options then
     -- Done. Construct FQBN.
@@ -1297,11 +1243,6 @@ function M.library_manager()
   end
 end
 
-function M.run_simulation()
-  require('arduino.sim').run()
-end
-
--- Keep run_simulation as internal API, expose simulate_and_monitor as the public command
 function M.simulate_and_monitor()
   require('arduino.sim').run()
 end
