@@ -155,9 +155,11 @@ Developer → Push README.md to master
 ### Scenario 3: Mixed Change
 ```
 Developer → Push README.md + Lua file to master
-         → Workflow does NOT trigger (paths-ignore)
-         → Manual README took precedence
-         → Done
+         → Workflow triggers (paths-ignore only skips README-only commits)
+         → Detects code change
+         → Calls Claude API and updates README (may override manual edits)
+         → Commits with [skip ci] and pushes to master
+         → Done (no re-trigger)
 ```
 
 ### Scenario 4: Doc-Only Change
