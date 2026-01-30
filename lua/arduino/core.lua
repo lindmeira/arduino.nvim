@@ -90,6 +90,7 @@ function M.list_outdated(callback)
 end
 
 function M.install(id, callback)
+  util.notify('Installing core ' .. id .. ' (this may take a moment)...', vim.log.levels.INFO)
   local cmd = 'arduino-cli core install "' .. id .. '"'
   term.run_silent(cmd, {
     success = 'Core ' .. id .. ' installed successfully.',
@@ -106,6 +107,7 @@ function M.uninstall(id, callback)
 end
 
 function M.upgrade(id, callback)
+  util.notify('Upgrading core ' .. id .. ' (this may take a moment)...', vim.log.levels.INFO)
   local cmd = 'arduino-cli core upgrade "' .. id .. '"'
   term.run_silent(cmd, {
     success = 'Core ' .. id .. ' upgraded successfully.',
