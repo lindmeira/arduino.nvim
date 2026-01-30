@@ -48,14 +48,15 @@ This workflow uses Claude 3.5 Sonnet for intelligent documentation updates.
 - Claude API calls are metered based on tokens
 - Typical README update: ~2,000-4,000 tokens (~$0.01-$0.02 per update)
 - Monitor usage at [Anthropic Console](https://console.anthropic.com/)
+- Check current pricing at [Anthropic Pricing](https://www.anthropic.com/pricing)
 
 ### Option 2: Manual Updates
 
 If you prefer not to use AI or don't want to set up API keys:
 
-1. The workflow will detect code changes but skip the README update
-2. A bot comment or notification will indicate that a manual README update may be needed
-3. You can update the README manually and commit it
+1. The workflow will detect code changes but skip the README update silently
+2. You can update the README manually when needed
+3. Manual updates can be committed normally
 
 ## Preventing Infinite Loops
 
@@ -85,6 +86,8 @@ Available models:
 - `claude-3-5-sonnet-20241022` (recommended, balanced)
 - `claude-3-opus-20240229` (highest quality, slower, more expensive)
 - `claude-3-haiku-20240307` (faster, cheaper, good for simple updates)
+
+**Note:** Model versions may be updated or deprecated over time. Check [Anthropic's documentation](https://docs.anthropic.com/claude/docs/models-overview) for the latest available models.
 
 ### Using a Different AI Provider
 

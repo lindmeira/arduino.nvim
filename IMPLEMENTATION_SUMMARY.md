@@ -206,14 +206,15 @@ Possible improvements:
 - API key stored as GitHub Secret (encrypted)
 - Workflow runs in isolated environment
 - Only writes to README.md (no other files)
-- Uses official GitHub Actions (`actions/checkout@v4`)
-- No external dependencies beyond Node.js stdlib
+- Uses official GitHub Actions (`actions/checkout@v4`, `actions/setup-node@v4`)
+- No external npm dependencies or third-party scripts
+- No secrets exposed in logs
 
 ## Cost Estimate
 
-Based on typical usage:
+Based on typical usage (check [current pricing](https://www.anthropic.com/pricing) for accuracy):
 - Average README update: 2,000-4,000 tokens
-- Claude 3.5 Sonnet pricing: ~$3 per million tokens (input), ~$15 per million tokens (output)
+- Claude 3.5 Sonnet pricing (approximate): ~$3 per million tokens (input), ~$15 per million tokens (output)
 - Estimated cost: $0.01-0.02 per update
 - For 100 updates/month: ~$1-2/month
 

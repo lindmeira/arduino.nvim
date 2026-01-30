@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   update-readme:
@@ -32,7 +31,13 @@ jobs:
         id: changed-files
         run: |
           echo "Getting changed files from last commit..."
-          git diff --name-only HEAD^ HEAD > changed_files.txt
+          # Handle initial commit or single-commit repos
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            git diff --name-only HEAD^ HEAD > changed_files.txt
+          else
+            # First commit - list all files
+            git ls-tree -r --name-only HEAD > changed_files.txt
+          fi
           cat changed_files.txt
           echo "files<<EOF" >> $GITHUB_OUTPUT
           cat changed_files.txt >> $GITHUB_OUTPUT
@@ -42,7 +47,7 @@ jobs:
         id: check-changes
         run: |
           # Check if any Lua files or plugin structure changed
-          if grep -qE '\.(lua|vim)$|^plugin/|^ftplugin/|^ftdetect/|^syntax/' changed_files.txt; then
+          if [ -s changed_files.txt ] && grep -qsE '\.(lua|vim)$|^plugin/|^ftplugin/|^ftdetect/|^syntax/' changed_files.txt; then
             echo "code_changed=true" >> $GITHUB_OUTPUT
             echo "Code files were changed, README update needed"
           else
@@ -79,7 +84,22 @@ jobs:
           echo "" >> update_prompt.txt
           echo "" >> update_prompt.txt
           echo "Git diff of changes:" >> update_prompt.txt
-          git diff HEAD^ HEAD -- $(cat changed_files.txt | tr '\n' ' ') >> update_prompt.txt || true
+          # Generate diff with proper error handling
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                git diff HEAD^ HEAD -- "$file" >> update_prompt.txt 2>/dev/null || echo "# Could not diff $file" >> update_prompt.txt
+              fi
+            done < changed_files.txt
+          else
+            echo "# Initial commit - showing file contents" >> update_prompt.txt
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                echo "## File: $file" >> update_prompt.txt
+                cat "$file" >> update_prompt.txt 2>/dev/null || echo "# Could not read $file" >> update_prompt.txt
+              fi
+            done < changed_files.txt
+          fi
 
       - name: Update README using AI
         if: steps.check-changes.outputs.code_changed == 'true'
@@ -121,7 +141,8 @@ jobs:
               'x-api-key': API_KEY,
               'anthropic-version': '2023-06-01',
               'Content-Length': data.length
-            }
+            },
+            timeout: 120000  // 2 minute timeout
           };
 
           const req = https.request(options, (res) => {
@@ -138,20 +159,28 @@ jobs:
                   const updatedReadme = response.content[0].text.trim();
                   fs.writeFileSync('README_updated.md', updatedReadme);
                   console.log("README updated successfully");
+                } else if (response.error) {
+                  console.error("API Error:", response.error.type, "-", response.error.message);
+                  process.exit(1);
                 } else {
-                  console.error("Unexpected response format:", body);
+                  console.error("Unexpected response format");
                   process.exit(1);
                 }
               } catch (e) {
-                console.error("Error parsing response:", e);
-                console.error("Response body:", body);
+                console.error("Error parsing response:", e.message);
                 process.exit(1);
               }
             });
           });
 
           req.on('error', (e) => {
-            console.error("Request error:", e);
+            console.error("Request error:", e.message);
+            process.exit(1);
+          });
+
+          req.on('timeout', () => {
+            console.error("Request timeout after 120 seconds");
+            req.destroy();
             process.exit(1);
           });
 
