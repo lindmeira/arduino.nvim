@@ -361,7 +361,6 @@ GitHub Repository
 
 Workflow has minimal permissions:
 - ✓ `contents: write` - Required to push README
-- ✓ `pull-requests: write` - Reserved for future features
 - ✗ No admin access
 - ✗ No secrets access beyond specified
 - ✗ No access to other repositories
