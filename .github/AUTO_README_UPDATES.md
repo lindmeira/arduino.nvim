@@ -64,7 +64,7 @@ The workflow is designed to prevent infinite loops through multiple safeguards:
 
 1. **Path Exclusion**: `paths-ignore` prevents triggering when README.md changes
 2. **Skip CI Tag**: Commits include `[skip ci]` to prevent re-triggering
-3. **Code Change Detection**: Only triggers when actual code files change
+3. **Code Change Detection**: README updates only run when actual code files change (the workflow may still run for other pushes and exit without updating the README)
 
 ## Customization
 
