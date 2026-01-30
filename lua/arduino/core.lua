@@ -93,7 +93,7 @@ function M.install(id, callback)
   local cmd = 'arduino-cli core install "' .. id .. '"'
   term.run_silent(cmd, {
     success = 'Core ' .. id .. ' installed successfully.',
-    fail = 'Failed to install core ' .. id .. '. Check logs with :ArduinoCheckLogs.'
+    fail = 'Failed to install core ' .. id .. '. Check logs with :ArduinoCheckLogs.',
   }, callback)
 end
 
@@ -101,7 +101,7 @@ function M.uninstall(id, callback)
   local cmd = 'arduino-cli core uninstall "' .. id .. '"'
   term.run_silent(cmd, {
     success = 'Core ' .. id .. ' removed successfully.',
-    fail = 'Failed to remove core ' .. id .. '. Check logs with :ArduinoCheckLogs.'
+    fail = 'Failed to remove core ' .. id .. '. Check logs with :ArduinoCheckLogs.',
   }, callback)
 end
 
@@ -109,14 +109,14 @@ function M.upgrade(id, callback)
   local cmd = 'arduino-cli core upgrade "' .. id .. '"'
   term.run_silent(cmd, {
     success = 'Core ' .. id .. ' upgraded successfully.',
-    fail = 'Failed to upgrade core ' .. id .. '. Check logs with :ArduinoCheckLogs.'
+    fail = 'Failed to upgrade core ' .. id .. '. Check logs with :ArduinoCheckLogs.',
   }, callback)
 end
 
 function M.add_third_party_urls(url_input)
   local urls = {}
   -- Parse space-separated input
-  for url in url_input:gmatch('%S+') do
+  for url in url_input:gmatch '%S+' do
     -- Basic URL validation
     if not url:match '^https?://.+' then
       util.notify('Invalid URL syntax: ' .. url, vim.log.levels.ERROR)
@@ -154,7 +154,7 @@ function M.add_third_party_urls(url_input)
       -- Run update-index
       util.notify('Updating core index...', vim.log.levels.INFO)
       local output = {}
-      
+
       vim.fn.jobstart('arduino-cli core update-index', {
         on_stdout = function(_, data)
           if data then
