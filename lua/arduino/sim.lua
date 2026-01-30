@@ -115,7 +115,7 @@ local function launch_simavr(mcu, freq, elf_path)
 
   -- Keymaps for closing
   local opts = { buffer = buf, silent = true }
-  vim.keymap.set('t', '<Esc>', '<C-\\><C-n><cmd>close<cr>', opts)
+  vim.keymap.set('t', '<Esc>', [[<C-\><C-n><cmd>close<cr>]], opts)
   vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
 end
 
@@ -219,9 +219,8 @@ local function open_avr_gdb(elf_path, port, fullscreen)
 
   -- Keymaps for closing
   local opts = { buffer = buf, silent = true }
-  vim.keymap.set('t', '<Esc>', '<C-\\><C-n><cmd>close<cr>', opts)
+  vim.keymap.set('t', '<Esc><Esc>', [[<C-\><C-n><cmd>close<cr>]], opts)
   vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
-  vim.keymap.set('n', '<Esc>', '<cmd>close<cr>', opts)
 
   vim.cmd 'startinsert'
   return { buf = buf, win = win, job_id = job_id }

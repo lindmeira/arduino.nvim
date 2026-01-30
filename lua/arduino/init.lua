@@ -361,7 +361,7 @@ function M.serial()
 
   -- Keymaps for closing
   local opts = { buffer = buf, silent = true }
-  vim.keymap.set('t', '<Esc>', '<C-\\><C-n><cmd>close<cr>', opts)
+  vim.keymap.set('t', '<Esc>', [[<C-\><C-n><cmd>close<cr>]], opts)
   vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
 end
 
