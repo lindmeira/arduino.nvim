@@ -49,6 +49,10 @@ require('arduino').setup({
     
     -- Use Telescope for selection menus if available
     use_telescope = true,
+
+    -- Simulation debug UI options
+    fullscreen_debug = false, -- Set to true to open GDB in fullscreen
+    sim_debug_gdb = nil,      -- GDB executable. If nil, auto-detects from arduino-cli toolchain or system
 })
 ```
 
@@ -73,7 +77,8 @@ This plugin is designed to work hand-in-hand with `arduino-cli`, and it uses `sk
 | `ArduinoUpload` | | Compile and upload the sketch. |
 | `ArduinoMonitor` | | Open a serial monitor buffer. |
 | `ArduinoUploadAndMonitor` | | Upload and then open serial monitor. |
-| `ArduinoSimulateAndMonitor` | | Launch a hardware simulator (e.g. SimAVR). |
+| `ArduinoSimulateAndMonitor` | | Launch a hardware simulator (e.g. SimAVR) and view serial output. |
+| `ArduinoSimulateAndDebug` | | Compile with debug flags and launch SimAVR with GDB attached. |
 | `ArduinoSelectSimulator` | | Choose which simulator to use. |
 | `ArduinoResetSimulation` | | Reset simulation parameters (MCU, frequency). |
 | `ArduinoLibraryManager` | | Manage libraries (install/update/remove). |
@@ -82,11 +87,18 @@ This plugin is designed to work hand-in-hand with `arduino-cli`, and it uses `sk
 | `ArduinoSetBaud` | | Set the baud rate used by the serial monitor. |
 | `ArduinoCheckLogs` | | Show the log buffer. |
 
-## Simulation
+## Simulation & Debugging
 
-This plugin includes a framework for hardware simulation, with built-in support for **SimAVR**. 
+This plugin includes a framework for hardware simulation, with built-in support for **SimAVR**.
 
-When you run `:ArduinoRunSimulation`, the plugin attempts to guess the correct MCU and frequency from your board configuration. If it can't, it will prompt you to select them. These settings are saved in your build directory for future runs.
+*   **:ArduinoSimulateAndMonitor**: Runs your sketch in the simulator and displays the serial output. It is build-mode agnostic and will use a standard release build unless a debug build is already present.
+*   **:ArduinoSimulateAndDebug**: Forces a compilation with debug symbols (`-g`, `-Og`), launches the simulator in debug mode, and connects an integrated GDB session in a floating window.
+
+When you run a simulation for the first time, the plugin attempts to guess the correct MCU and frequency from your board configuration. If it can't, it will prompt you to select them. These settings are saved in your build directory for future runs.
+
+**Debug Window Controls:**
+*   **Terminal Mode:** Press `<Esc>` to kill the GDB session and close the window.
+*   **Normal Mode:** Press `q` or `<Esc>` to close the window.
 
 ## Status Line / Lualine
 
