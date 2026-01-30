@@ -100,6 +100,10 @@ For other statuslines, use the provided status function:
 local status = require('arduino.status').string()
 ```
 
+## Contributing
+
+This repository uses automated README updates. When you push code changes to the master branch, a GitHub Actions workflow automatically analyzes your changes and updates this README to keep the documentation in sync with the code. See [.github/AUTO_README_UPDATES.md](.github/AUTO_README_UPDATES.md) for details on how this works and how to set it up.
+
 ## License
 
 Everything is under the [MIT License](https://github.com/lindmeira/arduino.nvim/blob/master/LICENSE).
