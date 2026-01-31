@@ -116,6 +116,7 @@ local function launch_simavr(mcu, freq, elf_path)
   -- Keymaps for closing
   local opts = { buffer = buf, silent = true }
   vim.keymap.set('t', '<Esc>', [[<C-\><C-n><cmd>close<cr>]], opts)
+  vim.keymap.set('n', '<Esc>', '<cmd>close<cr>', opts)
   vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
 end
 
@@ -220,6 +221,7 @@ local function open_avr_gdb(elf_path, port, fullscreen)
   -- Keymaps for closing
   local opts = { buffer = buf, silent = true }
   vim.keymap.set('t', '<Esc><Esc>', [[<C-\><C-n><cmd>close<cr>]], opts)
+  vim.keymap.set('n', '<Esc>', '<cmd>close<cr>', opts)
   vim.keymap.set('n', 'q', '<cmd>close<cr>', opts)
 
   vim.cmd 'startinsert'
@@ -299,39 +301,91 @@ local function check_save()
   return true
 end
 
-function M.simulate_and_debug()
-  if not check_save() then
+local function select_mcu_and_freq(callback)
+  local handle = io.popen 'simavr --list-cores'
+  if not handle then
+    util.notify('Failed to run simavr --list-cores', vim.log.levels.ERROR)
+    return
+  end
+  local result = handle:read '*a'
+  handle:close()
+
+  local mcus = {}
+  local is_first_line = true
+  for line in result:gmatch '[^\r\n]+' do
+    if is_first_line then
+      is_first_line = false
+    else
+      for mcu in line:gmatch '%S+' do
+        table.insert(mcus, { label = mcu, value = mcu })
+      end
+    end
+  end
+
+  if #mcus == 0 then
+    util.notify('No MCUs found from SimAVR.', vim.log.levels.ERROR)
     return
   end
 
-  local conf = read_simulation_config()
-  local sim = conf and conf.simulator
-  if not sim then
-    util.select_item(SIMULATORS, 'Select Simulator', function(sim_val)
-      if sim_val == 'simavr' then
-        setup_simavr(sim_val)
+  require('arduino.util').select_item(mcus, 'Select MCU', function(mcu_val)
+    vim.ui.input({ prompt = 'Enter Frequency (Hz) [default: 16000000]: ' }, function(input)
+      local freq = input
+      if not freq or freq == '' then
+        freq = '16000000'
       end
+      if not tonumber(freq) then
+        util.notify('Invalid frequency.', vim.log.levels.ERROR)
+        return
+      end
+      callback(mcu_val, freq)
     end)
-    conf = read_simulation_config()
-  end
+  end)
+end
 
-  -- Ensure compiled ELF with debug symbols
+local function configure_simavr(simulator_name, callback)
   local fqbn = config.options.board
   local base_fqbn = fqbn:match '^([^:]+:[^:]+:[^:]+)' or fqbn
 
-  local guess = FQBN_MAP[base_fqbn]
+  local existing_config = read_simulation_config()
   local mcu, freq
-  if conf and conf.mcu and conf.freq then
-    mcu = conf.mcu
-    freq = conf.freq
-  elseif guess then
-    mcu = guess.mcu
-    freq = guess.freq
-  else
-    util.notify('MCU/frequency unknown; run ArduinoSimulateAndMonitor first to configure.', vim.log.levels.ERROR)
-    return
-  end
 
+  -- Check if existing config matches current FQBN exactly
+  if existing_config and existing_config.fqbn == fqbn and existing_config.mcu and existing_config.freq then
+    mcu = existing_config.mcu
+    freq = existing_config.freq
+    -- If simulator preference changed, update it
+    if simulator_name and existing_config.simulator ~= simulator_name then
+      save_simulation_config(mcu, freq, fqbn, simulator_name)
+    end
+    callback(mcu, freq)
+  else
+    -- Config mismatch or missing: re-evaluate
+    local guess = FQBN_MAP[base_fqbn]
+
+    if not guess then
+      for _, item in ipairs(FQBN_PATTERNS) do
+        if fqbn:match(item.pattern) then
+          guess = item
+          break
+        end
+      end
+    end
+
+    if guess then
+      mcu = guess.mcu
+      freq = guess.freq
+      save_simulation_config(mcu, freq, fqbn, simulator_name)
+      callback(mcu, freq)
+    else
+      select_mcu_and_freq(function(selected_mcu, selected_freq)
+        save_simulation_config(selected_mcu, selected_freq, fqbn, simulator_name)
+        callback(selected_mcu, selected_freq)
+      end)
+    end
+  end
+end
+
+local function perform_debug_workflow(mcu, freq)
   -- Ensure ELF is compiled with debug flags
   local build_path = cli.get_build_path()
   if not build_path then
@@ -410,89 +464,40 @@ function M.simulate_and_debug()
   end
 end
 
-local function select_mcu_and_freq(callback)
-  local handle = io.popen 'simavr --list-cores'
-  if not handle then
-    util.notify('Failed to run simavr --list-cores', vim.log.levels.ERROR)
-    return
-  end
-  local result = handle:read '*a'
-  handle:close()
-
-  local mcus = {}
-  local is_first_line = true
-  for line in result:gmatch '[^\r\n]+' do
-    if is_first_line then
-      is_first_line = false
-    else
-      for mcu in line:gmatch '%S+' do
-        table.insert(mcus, { label = mcu, value = mcu })
-      end
+local function run_debug_with_simulator(sim_val)
+  if sim_val == 'simavr' then
+    if vim.fn.executable 'simavr' == 0 then
+      util.notify('Selected simulator not available.', vim.log.levels.ERROR)
+      return
     end
+    configure_simavr(sim_val, function(mcu, freq)
+      perform_debug_workflow(mcu, freq)
+    end)
+  else
+    util.notify('Simulator not implemented yet.', vim.log.levels.WARN)
   end
+end
 
-  if #mcus == 0 then
-    util.notify('No MCUs found from SimAVR.', vim.log.levels.ERROR)
+function M.simulate_and_debug()
+  if not check_save() then
     return
   end
 
-  require('arduino.util').select_item(mcus, 'Select MCU', function(mcu_val)
-    vim.ui.input({ prompt = 'Enter Frequency (Hz) [default: 16000000]: ' }, function(input)
-      local freq = input
-      if not freq or freq == '' then
-        freq = '16000000'
-      end
-      if not tonumber(freq) then
-        util.notify('Invalid frequency.', vim.log.levels.ERROR)
-        return
-      end
-      callback(mcu_val, freq)
+  local conf = read_simulation_config()
+  local sim = conf and conf.simulator
+  if not sim then
+    util.select_item(SIMULATORS, 'Select Simulator', function(sim_val)
+      run_debug_with_simulator(sim_val)
     end)
-  end)
+  else
+    run_debug_with_simulator(sim)
+  end
 end
 
 local function setup_simavr(simulator_name)
-  local fqbn = config.options.board
-  local base_fqbn = fqbn:match '^([^:]+:[^:]+:[^:]+)' or fqbn
-
-  local existing_config = read_simulation_config()
-  local mcu, freq
-
-  -- Check if existing config matches current FQBN exactly
-  if existing_config and existing_config.fqbn == fqbn and existing_config.mcu and existing_config.freq then
-    mcu = existing_config.mcu
-    freq = existing_config.freq
-    -- If simulator preference changed, update it
-    if simulator_name and existing_config.simulator ~= simulator_name then
-      save_simulation_config(mcu, freq, fqbn, simulator_name)
-    end
-  else
-    -- Config mismatch or missing: re-evaluate
-    local guess = FQBN_MAP[base_fqbn]
-
-    if not guess then
-      for _, item in ipairs(FQBN_PATTERNS) do
-        if fqbn:match(item.pattern) then
-          guess = item
-          break
-        end
-      end
-    end
-
-    if guess then
-      mcu = guess.mcu
-      freq = guess.freq
-      save_simulation_config(mcu, freq, fqbn, simulator_name)
-    else
-      select_mcu_and_freq(function(selected_mcu, selected_freq)
-        save_simulation_config(selected_mcu, selected_freq, fqbn, simulator_name)
-        ensure_elf_and_run(selected_mcu, selected_freq)
-      end)
-      return
-    end
-  end
-
-  ensure_elf_and_run(mcu, freq)
+  configure_simavr(simulator_name, function(mcu, freq)
+    ensure_elf_and_run(mcu, freq)
+  end)
 end
 
 local function run_with_simulator(sim_val)
