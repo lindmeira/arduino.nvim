@@ -52,7 +52,6 @@ require('arduino').setup({
 
     -- Simulation debug UI options
     fullscreen_debug = false, -- Set to true to open GDB in fullscreen
-    sim_debug_gdb = nil,      -- GDB executable. If nil, auto-detects from arduino-cli toolchain or system
 })
 ```
 
