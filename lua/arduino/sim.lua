@@ -121,7 +121,7 @@ local function launch_simavr(mcu, freq, elf_path)
 end
 
 -- Start simavr in background with gdb stub enabled on port 1234.
-local function launch_simavr_debug(mcu, freq, elf_path, output_chan, on_ready)
+local function launch_simavr_debug(mcu, freq, elf_path, output_chan, on_ready, on_output)
   -- simavr typically listens on port 1234 when -g is passed
   local port = 1234
   local ready_triggered = false
@@ -147,12 +147,18 @@ local function launch_simavr_debug(mcu, freq, elf_path, output_chan, on_ready)
       check_ready(data)
       if output_chan and data then
         pcall(vim.api.nvim_chan_send, output_chan, table.concat(data, '\r\n'))
+        if on_output then
+          on_output()
+        end
       end
     end,
     on_stderr = function(_, data)
       check_ready(data)
       if output_chan and data then
         pcall(vim.api.nvim_chan_send, output_chan, table.concat(data, '\r\n'))
+        if on_output then
+          on_output()
+        end
       end
     end,
     on_exit = function(_, code)
@@ -448,6 +454,7 @@ local function perform_debug_workflow(mcu, freq)
 
     local sim_chan = nil
     local sim_buf = nil
+    local sim_win = nil
 
     if config.options.debug_serial_split then
       -- Prepare SimAVR Output Buffer
@@ -463,11 +470,18 @@ local function perform_debug_workflow(mcu, freq)
       sim_chan = vim.api.nvim_open_term(sim_buf, {})
     end
 
+    local function on_output()
+      if sim_win and vim.api.nvim_win_is_valid(sim_win) then
+        local count = vim.api.nvim_buf_line_count(sim_buf)
+        vim.api.nvim_win_set_cursor(sim_win, { count, 0 })
+      end
+    end
+
     -- Launch SimAVR with output piping
     local sim_ready = false
     local siminfo = launch_simavr_debug(mcu, freq, final_elf, sim_chan, function()
       sim_ready = true
-    end)
+    end, on_output)
 
     if not siminfo or not siminfo.job_id then
       util.notify('Failed to start simavr for debugging.', vim.log.levels.ERROR)
@@ -534,7 +548,6 @@ local function perform_debug_workflow(mcu, freq)
       col = start_col,
     }
 
-    local sim_win = nil
     if config.options.debug_serial_split and sim_buf then
       local sim_win_opts = {
         relative = 'editor',
