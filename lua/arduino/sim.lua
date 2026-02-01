@@ -131,12 +131,12 @@ local function launch_simavr_debug(mcu, freq, elf_path, output_chan)
   local job_id = vim.fn.jobstart(cmd, {
     on_stdout = function(_, data)
       if output_chan and data then
-        vim.api.nvim_chan_send(output_chan, table.concat(data, '\r\n'))
+        pcall(vim.api.nvim_chan_send, output_chan, table.concat(data, '\r\n'))
       end
     end,
     on_stderr = function(_, data)
       if output_chan and data then
-        vim.api.nvim_chan_send(output_chan, table.concat(data, '\r\n'))
+        pcall(vim.api.nvim_chan_send, output_chan, table.concat(data, '\r\n'))
       end
     end,
     on_exit = function(_, code)
@@ -144,7 +144,7 @@ local function launch_simavr_debug(mcu, freq, elf_path, output_chan)
         util.notify('Simulation exited with code ' .. code, vim.log.levels.WARN)
       end
       if output_chan then
-        vim.api.nvim_chan_send(output_chan, '\r\n[Process exited with code ' .. code .. ']\r\n')
+        pcall(vim.api.nvim_chan_send, output_chan, '\r\n[Process exited with code ' .. code .. ']\r\n')
       end
     end,
   })
