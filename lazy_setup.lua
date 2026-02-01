@@ -13,6 +13,8 @@ return {
       -- manager_emoji = false, -- Defaults to true
       -- use_telescope = false, -- Defaults to true if available
       -- fullscreen_debug = true, -- Defaults to false
+      -- debug_split_ratio = 0.5, -- Defaults to .66
+      -- debug_serial_split = false, -- Defaults to true
       -- build_path = '{project_dir}/build',
       -- floating_window = { -- Configure floating windows style (logs, monitor)
       --   style = 'telescope', -- 'telescope' (default) or 'lualine'
@@ -22,22 +24,25 @@ return {
   keys = {
     { '<leader>ab', '<cmd>ArduinoSelectBoard<cr>', desc = 'Select Board' },
     { '<leader>ac', '<cmd>ArduinoVerify<cr>', desc = 'Compile/Verify' },
-    { '<leader>af', '<cmd>ArduinoUpload<cr>', desc = 'Flash Firmware' },
     -- { '<leader>ai', '<cmd>ArduinoGetInfo<cr>', desc = 'Current Settings' },
     { '<leader>al', '<cmd>ArduinoCheckLogs<cr>', desc = 'Check Logs' },
+    { '<leader>ad', '<cmd>ArduinoMonitor<cr>', desc = 'Serial Monitor' },
     { '<leader>ap', '<cmd>ArduinoSelectPort<cr>', desc = 'Select Port' },
     { '<leader>ar', '<cmd>ArduinoSetBaud<cr>', desc = 'Select Baud' },
-    { '<leader>as', '<cmd>ArduinoMonitor<cr>', desc = 'Serial Monitor' },
     { '<leader>at', '<cmd>ArduinoSelectProgrammer<cr>', desc = 'Select Programmer' },
-    { '<leader>au', '<cmd>ArduinoUploadAndMonitor<cr>', desc = 'Flash and Monitor' },
     -- Hidden shortcuts
     { '<leader>av', '<cmd>ArduinoVerify<cr>', desc = 'which_key_ignore' },
-    -- Grouped shortcuts
-    { '<leader>anc', '<cmd>ArduinoCoreManager<cr>', desc = 'Core Manager' },
-    { '<leader>anl', '<cmd>ArduinoLibraryManager<cr>', desc = 'Library Manager' },
-    { '<leader>anr', '<cmd>ArduinoResetSimulation<cr>', desc = 'Reset Simulation' },
-    { '<leader>ans', '<cmd>ArduinoSelectSimulator<cr>', desc = 'Select Simulator' },
-    { '<leader>anv', '<cmd>ArduinoSimulateAndDebug<cr>', desc = 'Simulate and Debug' },
-    { '<leader>anx', '<cmd>ArduinoSimulateAndMonitor<cr>', desc = 'Simulate and Monitor' },
+    -- Grouped shortcuts: f (flash)
+    { '<leader>aff', '<cmd>ArduinoUpload<cr>', desc = 'Flash Firmware' },
+    { '<leader>afm', '<cmd>ArduinoUploadAndMonitor<cr>', desc = 'Flash and Monitor' },
+    -- Grouped shortcuts: m (manager)
+    { '<leader>amc', '<cmd>ArduinoCoreManager<cr>', desc = 'Core Manager' },
+    { '<leader>ama', '<cmd>ArduinoThirdPartyCore<cr>', desc = 'Add Core URL' },
+    { '<leader>aml', '<cmd>ArduinoLibraryManager<cr>', desc = 'Library Manager' },
+    -- Grouped shortcuts: s (simulation)
+    { '<leader>asr', '<cmd>ArduinoResetSimulation<cr>', desc = 'Reset Simulation' },
+    { '<leader>ass', '<cmd>ArduinoSelectSimulator<cr>', desc = 'Select Simulator' },
+    { '<leader>asd', '<cmd>ArduinoSimulateAndDebug<cr>', desc = 'Simulate and Debug' },
+    { '<leader>asm', '<cmd>ArduinoSimulateAndMonitor<cr>', desc = 'Simulate and Monitor' },
   },
 }
