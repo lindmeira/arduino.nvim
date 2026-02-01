@@ -156,7 +156,8 @@ local function launch_simavr_debug(mcu, freq, elf_path, output_chan, on_ready)
       end
     end,
     on_exit = function(_, code)
-      if code ~= 0 then
+      -- Ignore 129 (SIGHUP) and 143 (SIGTERM) which happen when we kill the process
+      if code ~= 0 and code ~= 129 and code ~= 143 then
         util.notify('Simulation exited with code ' .. code, vim.log.levels.WARN)
       end
       if output_chan then
