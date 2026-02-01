@@ -10,14 +10,15 @@ return {
       auto_baud = true,
       serial_baud = 57600,
       -- serial_cmd = 'screen', -- 'arduino-cli' (default), 'screen', 'minicom' or 'picocom'
-      -- manager_emoji = false, -- Defaults to true
+      -- manager_emoji = false, -- Defaults to true, works when use_telescope = false
       -- use_telescope = false, -- Defaults to true if available
       -- fullscreen_debug = true, -- Defaults to false
       -- debug_split_ratio = 0.5, -- Defaults to .66
       -- debug_serial_split = false, -- Defaults to true
+      -- debug_horizontal_split = true, -- Defaults to false
       -- build_path = '{project_dir}/build',
       -- floating_window = { -- Configure floating windows style (logs, monitor)
-      --   style = 'telescope', -- 'telescope' (default) or 'lualine'
+      --   style = 'lualine', -- 'telescope' (default) or 'lualine'
       -- },
     }
   end,

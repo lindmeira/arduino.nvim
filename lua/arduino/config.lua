@@ -32,6 +32,7 @@ M.VALID_BAUD_RATES = {
   fullscreen_debug = false,
   debug_serial_split = true, -- Enable split view for serial output
   debug_split_ratio = 0.66, -- Width ratio for GDB window (0.0 to 1.0)
+  debug_horizontal_split = false, -- Enable horizontal split for debug layout
   sim_debug_gdb = nil, -- If nil, will auto-resolve
   sim_debug_kill_sim_on_gdb_exit = true,
   serial_cmd = 'arduino-cli',

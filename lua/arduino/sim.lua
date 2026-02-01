@@ -499,18 +499,37 @@ local function perform_debug_workflow(mcu, freq)
     end
 
     local gdb_width = total_width
+    local gdb_height = total_height
     local sim_width = 0
+    local sim_height = 0
+    local sim_row = row
+    local sim_col = start_col
 
     if config.options.debug_serial_split then
-      -- Use debug_split_ratio (default 0.66) to calculate widths
       local ratio = config.options.debug_split_ratio or 0.66
-      gdb_width = math.floor(total_width * ratio)
-      sim_width = total_width - gdb_width - 2 -- Account for border spacing
+
+      if config.options.debug_horizontal_split then
+        -- Horizontal Split (Top/Bottom)
+        -- GDB takes top portion, Sim takes bottom
+        gdb_height = math.floor(total_height * ratio)
+        sim_height = total_height - gdb_height - 2 -- Account for border spacing
+        sim_width = total_width
+        sim_row = row + gdb_height + 2
+        sim_col = start_col
+      else
+        -- Vertical Split (Left/Right)
+        -- GDB takes left portion, Sim takes right
+        gdb_width = math.floor(total_width * ratio)
+        sim_width = total_width - gdb_width - 2 -- Account for border spacing
+        sim_height = total_height
+        sim_row = row
+        sim_col = start_col + gdb_width + 2
+      end
     end
 
     local gdb_opts = {
       width = gdb_width,
-      height = total_height,
+      height = gdb_height,
       row = row,
       col = start_col,
     }
@@ -520,9 +539,9 @@ local function perform_debug_workflow(mcu, freq)
       local sim_win_opts = {
         relative = 'editor',
         width = sim_width,
-        height = total_height,
-        row = row,
-        col = start_col + gdb_width + 2,
+        height = sim_height,
+        row = sim_row,
+        col = sim_col,
         style = 'minimal',
         border = 'rounded',
         title = ' SimAVR Output ',
