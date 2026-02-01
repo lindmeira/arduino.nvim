@@ -204,7 +204,7 @@ function M.get_tool_path(tool_name)
     return tool_path_cache[cache_key]
   end
 
-  local cmd = 'arduino-cli compile --show-properties -b ' .. board
+  local cmd = 'arduino-cli compile --show-properties -b ' .. board .. ' "' .. vim.fn.expand '%:p' .. '" 2>/dev/null'
   local handle = io.popen(cmd)
   if not handle then
     return nil
