@@ -475,8 +475,9 @@ local function perform_debug_workflow(mcu, freq)
     local sim_width = 0
 
     if config.options.debug_serial_split then
-      -- GDB takes left ~66%, Sim takes right ~33%
-      gdb_width = math.floor(total_width * 0.66)
+      -- Use debug_split_ratio (default 0.66) to calculate widths
+      local ratio = config.options.debug_split_ratio or 0.66
+      gdb_width = math.floor(total_width * ratio)
       sim_width = total_width - gdb_width - 2 -- Account for border spacing
     end
 
