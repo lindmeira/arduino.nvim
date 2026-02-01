@@ -121,7 +121,7 @@ local function launch_simavr(mcu, freq, elf_path)
 end
 
 -- Start simavr in background with gdb stub enabled on port 1234.
-local function launch_simavr_debug(mcu, freq, elf_path)
+local function launch_simavr_debug(mcu, freq, elf_path, output_chan)
   -- simavr typically listens on port 1234 when -g is passed
   local port = 1234
 
@@ -130,18 +130,21 @@ local function launch_simavr_debug(mcu, freq, elf_path)
   -- Run in background job (not terminal) so we can open a separate gdb terminal
   local job_id = vim.fn.jobstart(cmd, {
     on_stdout = function(_, data)
-      if data and #data > 0 then
-        -- Could store logs if desired
+      if output_chan and data then
+        vim.api.nvim_chan_send(output_chan, table.concat(data, '\r\n'))
       end
     end,
     on_stderr = function(_, data)
-      if data and #data > 0 then
-        -- Log errors
+      if output_chan and data then
+        vim.api.nvim_chan_send(output_chan, table.concat(data, '\r\n'))
       end
     end,
     on_exit = function(_, code)
       if code ~= 0 then
         util.notify('Simulation exited with code ' .. code, vim.log.levels.WARN)
+      end
+      if output_chan then
+        vim.api.nvim_chan_send(output_chan, '\r\n[Process exited with code ' .. code .. ']\r\n')
       end
     end,
   })
@@ -165,7 +168,7 @@ local function resolve_avr_gdb()
   return 'avr-gdb'
 end
 
-local function open_avr_gdb(elf_path, port, fullscreen)
+local function open_avr_gdb(elf_path, port, layout_opts)
   local gdb = resolve_avr_gdb()
   if vim.fn.executable(gdb) == 0 then
     util.notify(gdb .. ' not found.', vim.log.levels.ERROR)
@@ -179,7 +182,13 @@ local function open_avr_gdb(elf_path, port, fullscreen)
 
   local buf = vim.api.nvim_create_buf(false, true)
   local width, height, row, col
-  if fullscreen or config.options.fullscreen_debug then
+  
+  if layout_opts then
+    width = layout_opts.width
+    height = layout_opts.height
+    row = layout_opts.row
+    col = layout_opts.col
+  elseif config.options.fullscreen_debug then
     width = vim.o.columns
     height = vim.o.lines
     row = 0
@@ -423,25 +432,77 @@ local function perform_debug_workflow(mcu, freq)
       return
     end
 
-    local siminfo = launch_simavr_debug(mcu, freq, final_elf)
+    -- Prepare SimAVR Output Buffer
+    local sim_buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(sim_buf, 'SimAVR Output')
+    local sim_chan = vim.api.nvim_open_term(sim_buf, {})
+
+    -- Launch SimAVR with output piping
+    local siminfo = launch_simavr_debug(mcu, freq, final_elf, sim_chan)
     if not siminfo or not siminfo.job_id then
       util.notify('Failed to start simavr for debugging.', vim.log.levels.ERROR)
       return
     end
 
-    local session = open_avr_gdb(final_elf, siminfo.port, false)
+    -- Calculate Split Layout (Centered 80% Height, 90% Width)
+    -- GDB takes left ~66%, Sim takes right ~33%
+    local total_width = math.ceil(vim.o.columns * 0.9)
+    local total_height = math.ceil(vim.o.lines * 0.8)
+    local row = math.floor((vim.o.lines - total_height) / 2) - 1
+    local start_col = math.ceil((vim.o.columns - total_width) / 2)
+
+    local gdb_width = math.floor(total_width * 0.66)
+    local sim_width = total_width - gdb_width - 2 -- Account for border spacing
+
+    local gdb_opts = {
+      width = gdb_width,
+      height = total_height,
+      row = row,
+      col = start_col,
+    }
+
+    local sim_win_opts = {
+      relative = 'editor',
+      width = sim_width,
+      height = total_height,
+      row = row,
+      col = start_col + gdb_width + 2,
+      style = 'minimal',
+      border = 'rounded',
+      title = ' SimAVR Output ',
+      title_pos = 'center',
+    }
+
+    -- Open Sim Window
+    local sim_win = vim.api.nvim_open_win(sim_buf, false, sim_win_opts)
+    vim.api.nvim_set_option_value('winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle', { win = sim_win })
+    vim.api.nvim_set_option_value('wrap', true, { win = sim_win })
+
+    -- Open GDB Session
+    local session = open_avr_gdb(final_elf, siminfo.port, gdb_opts)
+
     if not session then
+      -- GDB failed, cleanup sim
+      if vim.api.nvim_win_is_valid(sim_win) then
+        vim.api.nvim_win_close(sim_win, true)
+      end
       if config.options.sim_debug_kill_sim_on_gdb_exit and siminfo and siminfo.job_id then
         pcall(vim.fn.jobstop, siminfo.job_id)
       end
       return
     end
 
+    -- Setup Cleanup Hooks
     if config.options.sim_debug_kill_sim_on_gdb_exit then
       vim.api.nvim_create_autocmd({ 'BufUnload', 'WinClosed' }, {
         buffer = session.buf,
         once = true,
         callback = function()
+          -- Close Sim Window if still open
+          if vim.api.nvim_win_is_valid(sim_win) then
+            vim.api.nvim_win_close(sim_win, true)
+          end
+          -- Kill SimAVR Job
           if siminfo and siminfo.job_id then
             pcall(vim.fn.jobstop, siminfo.job_id)
           end
