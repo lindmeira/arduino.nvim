@@ -30,6 +30,7 @@ M.VALID_BAUD_RATES = {
   simulation_build_args = "--build-property compiler.c.extra_flags=-g --build-property compiler.cpp.extra_flags=-g --build-property build.extra_flags='-Og -fno-lto'",
   -- Simulation debug UI options
   fullscreen_debug = false,
+  debug_serial_split = true, -- Enable split view for serial output
   sim_debug_gdb = nil, -- If nil, will auto-resolve
   sim_debug_kill_sim_on_gdb_exit = true,
   serial_cmd = 'arduino-cli',

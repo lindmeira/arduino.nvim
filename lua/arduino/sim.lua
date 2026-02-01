@@ -432,17 +432,22 @@ local function perform_debug_workflow(mcu, freq)
       return
     end
 
-    -- Prepare SimAVR Output Buffer
-    -- cleanup existing buffer if present to avoid E95
-    local existing_buf = vim.fn.bufnr '^SimAVR Output$'
-    if existing_buf ~= -1 then
-      vim.api.nvim_buf_delete(existing_buf, { force = true })
-    end
+    local sim_chan = nil
+    local sim_buf = nil
 
-    local sim_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(sim_buf, 'SimAVR Output')
-    vim.bo[sim_buf].bufhidden = 'wipe'
-    local sim_chan = vim.api.nvim_open_term(sim_buf, {})
+    if config.options.debug_serial_split then
+      -- Prepare SimAVR Output Buffer
+      -- cleanup existing buffer if present to avoid E95
+      local existing_buf = vim.fn.bufnr '^SimAVR Output$'
+      if existing_buf ~= -1 then
+        vim.api.nvim_buf_delete(existing_buf, { force = true })
+      end
+
+      sim_buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_buf_set_name(sim_buf, 'SimAVR Output')
+      vim.bo[sim_buf].bufhidden = 'wipe'
+      sim_chan = vim.api.nvim_open_term(sim_buf, {})
+    end
 
     -- Launch SimAVR with output piping
     local siminfo = launch_simavr_debug(mcu, freq, final_elf, sim_chan)
@@ -466,8 +471,14 @@ local function perform_debug_workflow(mcu, freq)
       start_col = math.ceil((vim.o.columns - total_width) / 2)
     end
 
-    local gdb_width = math.floor(total_width * 0.66)
-    local sim_width = total_width - gdb_width - 2 -- Account for border spacing
+    local gdb_width = total_width
+    local sim_width = 0
+
+    if config.options.debug_serial_split then
+      -- GDB takes left ~66%, Sim takes right ~33%
+      gdb_width = math.floor(total_width * 0.66)
+      sim_width = total_width - gdb_width - 2 -- Account for border spacing
+    end
 
     local gdb_opts = {
       width = gdb_width,
@@ -476,29 +487,32 @@ local function perform_debug_workflow(mcu, freq)
       col = start_col,
     }
 
-    local sim_win_opts = {
-      relative = 'editor',
-      width = sim_width,
-      height = total_height,
-      row = row,
-      col = start_col + gdb_width + 2,
-      style = 'minimal',
-      border = 'rounded',
-      title = ' SimAVR Output ',
-      title_pos = 'center',
-    }
+    local sim_win = nil
+    if config.options.debug_serial_split and sim_buf then
+      local sim_win_opts = {
+        relative = 'editor',
+        width = sim_width,
+        height = total_height,
+        row = row,
+        col = start_col + gdb_width + 2,
+        style = 'minimal',
+        border = 'rounded',
+        title = ' SimAVR Output ',
+        title_pos = 'center',
+      }
 
-    -- Open Sim Window
-    local sim_win = vim.api.nvim_open_win(sim_buf, false, sim_win_opts)
-    vim.api.nvim_set_option_value('winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle', { win = sim_win })
-    vim.api.nvim_set_option_value('wrap', true, { win = sim_win })
+      -- Open Sim Window
+      sim_win = vim.api.nvim_open_win(sim_buf, false, sim_win_opts)
+      vim.api.nvim_set_option_value('winhl', 'Normal:ArduinoWindowNormal,FloatBorder:ArduinoWindowBorder,FloatTitle:ArduinoWindowTitle', { win = sim_win })
+      vim.api.nvim_set_option_value('wrap', true, { win = sim_win })
+    end
 
     -- Open GDB Session
     local session = open_avr_gdb(final_elf, siminfo.port, gdb_opts)
 
     if not session then
       -- GDB failed, cleanup sim
-      if vim.api.nvim_win_is_valid(sim_win) then
+      if sim_win and vim.api.nvim_win_is_valid(sim_win) then
         vim.api.nvim_win_close(sim_win, true)
       end
       if config.options.sim_debug_kill_sim_on_gdb_exit and siminfo and siminfo.job_id then
@@ -514,7 +528,7 @@ local function perform_debug_workflow(mcu, freq)
         once = true,
         callback = function()
           -- Close Sim Window if still open
-          if vim.api.nvim_win_is_valid(sim_win) then
+          if sim_win and vim.api.nvim_win_is_valid(sim_win) then
             vim.api.nvim_win_close(sim_win, true)
           end
           -- Kill SimAVR Job
