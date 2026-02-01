@@ -451,12 +451,20 @@ local function perform_debug_workflow(mcu, freq)
       return
     end
 
-    -- Calculate Split Layout (Centered 80% Height, 80% Width)
-    -- GDB takes left ~66%, Sim takes right ~33%
-    local total_width = math.ceil(vim.o.columns * 0.8)
-    local total_height = math.ceil(vim.o.lines * 0.8)
-    local row = math.floor((vim.o.lines - total_height) / 2) - 1
-    local start_col = math.ceil((vim.o.columns - total_width) / 2)
+    -- Calculate Split Layout
+    local total_width, total_height, row, start_col
+    if config.options.fullscreen_debug then
+      total_width = vim.o.columns
+      total_height = vim.o.lines
+      row = 0
+      start_col = 0
+    else
+      -- Centered 80% Height, 80% Width
+      total_width = math.ceil(vim.o.columns * 0.8)
+      total_height = math.ceil(vim.o.lines * 0.8)
+      row = math.floor((vim.o.lines - total_height) / 2) - 1
+      start_col = math.ceil((vim.o.columns - total_width) / 2)
+    end
 
     local gdb_width = math.floor(total_width * 0.66)
     local sim_width = total_width - gdb_width - 2 -- Account for border spacing
