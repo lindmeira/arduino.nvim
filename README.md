@@ -90,19 +90,19 @@ This plugin is designed to work hand-in-hand with `arduino-cli`, and it uses
 
 ## Commands
 
-| Command | arg | description |
+| Command | Arg | Description |
 | :--- | :--- | :--- |
 | `ArduinoSelectBoard` | [board] | Select board FQBN. Updates `sketch.yaml` and restarts LSP. |
 | `ArduinoSelectProgrammer`| [prog] | Select programmer. |
 | `ArduinoSelectPort` | [port] | Select serial port. Updates `sketch.yaml` and restarts LSP. |
 | `ArduinoVerify` | | Compile the sketch. |
 | `ArduinoUpload` | | Compile and upload the sketch. |
-| `ArduinoMonitor` | | Open a serial monitor buffer. |
-| `ArduinoUploadAndMonitor` | | Upload and then open serial monitor. |
-| `ArduinoSimulateAndMonitor` | | Launch a hardware simulator (e.g. SimAVR) and view serial output. |
-| `ArduinoSimulateAndDebug` | | Compile with debug flags and launch SimAVR with GDB attached. |
+| `ArduinoMonitor` | | Open hardware serial monitor buffer. |
+| `ArduinoUploadAndMonitor` | | Upload and then open hardware serial monitor. |
+| `ArduinoSimulateAndMonitor` | | Launch a hardware simulator (e.g. SimAVR) and view pseudo-serial output. |
+| `ArduinoSimulateAndDebug` | | Compile with debug flags and launch simulator with GDB attached. |
 | `ArduinoSelectSimulator` | | Choose which simulator to use. |
-| `ArduinoResetSimulation` | | Reset simulation parameters (MCU, frequency). |
+| `ArduinoResetSimulation` | | Reset simulation parameters (MCU & frequency). |
 | `ArduinoLibraryManager` | | Manage libraries (install/update/remove). |
 | `ArduinoCoreManager` | | Manage cores (install/update/remove). |
 | `ArduinoGetInfo` | | Display current configuration info. |
