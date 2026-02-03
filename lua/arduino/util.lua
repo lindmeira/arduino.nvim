@@ -95,7 +95,7 @@ end
 
 function M.find_sketch_config(dir)
   dir = dir or vim.fn.expand '%:p:h'
-  local root = dir
+  -- local root = dir
   while true do
     local sketch_yaml = dir .. '/sketch.yaml'
     if vim.fn.filereadable(sketch_yaml) == 1 then
@@ -319,7 +319,8 @@ function M.select_item(items, prompt, callback)
           end,
         },
         sorter = conf.generic_sorter {},
-        attach_mappings = function(prompt_bufnr, map)
+        -- attach_mappings = function(prompt_bufnr, map)
+        attach_mappings = function(prompt_bufnr)
           actions.select_default:replace(function()
             actions.close(prompt_bufnr)
             local selection = action_state.get_selected_entry()

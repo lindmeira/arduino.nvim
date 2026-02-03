@@ -1,4 +1,4 @@
-local config = require 'arduino.config'
+-- local config = require 'arduino.config'
 local util = require 'arduino.util'
 local term = require 'arduino.term'
 

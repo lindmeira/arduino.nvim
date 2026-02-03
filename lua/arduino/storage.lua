@@ -19,8 +19,10 @@ function M.load()
     return {}
   end
   local f = io.open(path, 'r')
-  if not f then return {} end
-  local content = f:read('*a')
+  if not f then
+    return {}
+  end
+  local content = f:read '*a'
   f:close()
   local ok, data = pcall(vim.json.decode, content)
   return ok and data or {}
@@ -28,8 +30,10 @@ end
 
 function M.save(data)
   local path = get_file_path()
-  if not path then return end
-  
+  if not path then
+    return
+  end
+
   local f = io.open(path, 'w')
   if f then
     f:write(vim.json.encode(data))
